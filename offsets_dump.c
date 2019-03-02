@@ -30,8 +30,8 @@ int dump_offsets_to_file(char *file) {
     
     off.allproc = find_allproc();
     off.gadget = find_add_x0_x0_0x40_ret();
-    off.OSBooleanFalse = 0; //Find_OSBoolean_False();
     off.OSBooleanTrue = find_OSBoolean_True();
+    off.OSBooleanFalse = off.OSBooleanTrue + 8;
     off.OSUnserializeXML = find_osunserializexml();
     off.smalloc = find_smalloc();
     off.zone_map_ref = find_zone_map_ref();
