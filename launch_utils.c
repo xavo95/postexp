@@ -32,7 +32,7 @@ int launch(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *a
     return WEXITSTATUS(a);
 }
 
-int launchAsPlatform(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
+int launch_as_platform(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
     pid_t pd;
     const char* args[] = {binary, arg1, arg2, arg3, arg4, arg5, arg6,  NULL};
     

@@ -166,7 +166,7 @@ int strtail(const char *str, const char *tail)
  * Description:
  *     Injects to trustcache.
  */
-void inject_trusts(int pathc, NSMutableArray *paths, uint64_t base) {
+void inject_trusts(int pathc, NSMutableArray *paths) {
     INFO("injecting into trust cache...");
     
     struct utsname ut;
@@ -178,9 +178,9 @@ void inject_trusts(int pathc, NSMutableArray *paths, uint64_t base) {
          iPhone11,8: 0xFFFFFFF008ED42C8
          */
         if(strcmp("iPhone11,8", ut.machine) == 0) {
-            tc = base + (0xFFFFFFF008ED42C8 - 0xFFFFFFF007004000);
+            tc = kernel_slide + 0xFFFFFFF008ED42C8;
         } else {
-            tc = base + (0xFFFFFFF008F702C8 - 0xFFFFFFF007004000);
+            tc = kernel_slide + 0xFFFFFFF008F702C8;
         }
     }
     
@@ -228,9 +228,9 @@ void inject_trusts(int pathc, NSMutableArray *paths, uint64_t base) {
      iPhone11,8: 0xFFFFFFF007B50504
      */
     if(strcmp("iPhone11,8", ut.machine) == 0) {
-        f_load_trust_cache = base + (0xFFFFFFF007B50504 - 0xFFFFFFF007004000);
+        f_load_trust_cache = kernel_slide + 0xFFFFFFF007B50504;
     } else {
-        f_load_trust_cache = base + (0xFFFFFFF007B80504 - 0xFFFFFFF007004000);
+        f_load_trust_cache = kernel_slide + 0xFFFFFFF007B80504;
     }
     uint32_t ret = kernel_call_7(f_load_trust_cache, 3,
                                  kernel_trust,
@@ -248,8 +248,7 @@ void inject_trusts(int pathc, NSMutableArray *paths, uint64_t base) {
  * Description:
  *     Injects to trustcache.
  */
-int trustbin(const char *path, uint64_t base) {
-    
+int trustbin(const char *path) {
     NSMutableArray *paths = [NSMutableArray array];
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
@@ -377,7 +376,7 @@ int trustbin(const char *path, uint64_t base) {
         }
     }
     
-    inject_trusts([paths count], paths, base);
+    inject_trusts([paths count], paths);
     
 //    bool isA12 = false;
 //    uint64_t trust_chain = Find_trustcache();

@@ -25,6 +25,6 @@ int launch(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *a
  * Description:
  *     Launch a binary as platform binary.
  */
-int launchAsPlatform(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env);
+int launch_as_platform(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env);
 
 #endif /* launch_utils_h */

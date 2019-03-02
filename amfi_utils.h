@@ -23,7 +23,7 @@ uint8_t *getCodeDirectory(const char* name);
  * Description:
  *     Injects to trustcache.
  */
-int trustbin(const char *path, uint64_t base);
+int trustbin(const char *path);
 
 // Trust cache types
 typedef char hash_t[20];

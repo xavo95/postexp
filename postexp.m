@@ -24,12 +24,16 @@
 #include "log.h"
 #include "post-common.h"
 #include "launch_utils.h"
+#include "payload.h"
+#include "offsets_dump.h"
 
 #include "patchfinder64.h"
 #include "macho-helper.h"
 #include "lzssdec.hpp"
 #include "untar.h"
 #include "amfi_utils.h"
+
+#define in_bundle(obj) strdup([[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@obj] UTF8String])
 
 #define fileExists(file) [[NSFileManager defaultManager] fileExistsAtPath:@(file)]
 
@@ -53,14 +57,74 @@ if (error) {\
 ERROR("error moving item %s to path %s (%s)", copyFrom, moveTo, [[error localizedDescription] UTF8String]); \
 }
 
-const char *binPath = "/var/containers/Bundle/iosbinpack64";
 const char *kernel_path = "/System/Library/Caches/com.apple.kernelcaches/kernelcache";
 
-char *get_path(char *path) {
-    char *res = "";
-    strcpy(res, (char *)binPath);
-    strcat(res, path);
-    return res;
+enum post_exp_t clean_up_previous(void) {
+    NSError *error = NULL;
+    if (!fileExists("/var/containers/Bundle/.installed_rootlessJB3")) {
+        
+        if (fileExists("/var/containers/Bundle/iosbinpack64")) {
+            INFO("uninstalling previous build...");
+            
+            removeFile("/var/LIB");
+            removeFile("/var/ulb");
+            removeFile("/var/bin");
+            removeFile("/var/sbin");
+            removeFile("/var/containers/Bundle/tweaksupport/Applications");
+            removeFile("/var/Apps");
+            removeFile("/var/profile");
+            removeFile("/var/motd");
+            removeFile("/var/dropbear");
+            removeFile("/var/containers/Bundle/tweaksupport");
+            removeFile("/var/containers/Bundle/iosbinpack64");
+            removeFile("/var/containers/Bundle/dylibs");
+            removeFile("/var/log/testbin.log");
+            
+            if (fileExists("/var/log/jailbreakd-stdout.log")) removeFile("/var/log/jailbreakd-stdout.log");
+            if (fileExists("/var/log/jailbreakd-stderr.log")) removeFile("/var/log/jailbreakd-stderr.log");
+        }
+        
+        INFO("installing bootstrap...");
+        
+        chdir("/var/containers/Bundle/");
+        FILE *bootstrap = fopen((char*)in_bundle("iosbinpack.tar"), "r");
+        untar(bootstrap, "/var/containers/Bundle/");
+        fclose(bootstrap);
+        
+//        FILE *tweaks = fopen((char*)in_bundle("tweaksupport.tar"), "r");
+//        untar(tweaks, "/var/containers/Bundle/");
+//        fclose(tweaks);
+        
+//        if(!fileExists("/var/containers/Bundle/tweaksupport") || !fileExists("/var/containers/Bundle/iosbinpack64")) {
+//            ERROR("[-] Failed to install bootstrap");
+//        }
+        
+        mkdir("/var/containers/Bundle/tweaksupport", 0777);
+        if(!fileExists("/var/containers/Bundle/iosbinpack64")) {
+            ERROR("failed to install bootstrap");
+            cleanup();
+            return ERROR_INSTALLING_BOOTSTRAP;
+        }
+        
+        INFO("creating symlinks...");
+        
+//        symlink("/var/containers/Bundle/tweaksupport/Library", "/var/LIB");
+//        symlink("/var/containers/Bundle/tweaksupport/usr/lib", "/var/ulb");
+//        symlink("/var/containers/Bundle/tweaksupport/Applications", "/var/Apps");
+//        symlink("/var/containers/Bundle/tweaksupport/bin", "/var/bin");
+//        symlink("/var/containers/Bundle/tweaksupport/sbin", "/var/sbin");
+//        symlink("/var/containers/Bundle/tweaksupport/usr/libexec", "/var/libexec");
+        
+        close(open("/var/containers/Bundle/.installed_rootlessJB3", O_CREAT));
+        
+        //limneos
+        symlink("/var/containers/Bundle/iosbinpack64/etc", "/var/etc");
+//        symlink("/var/containers/Bundle/tweaksupport/usr", "/var/usr");
+        symlink("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "/var/bin/killall");
+        
+        INFO("installed bootstrap!");
+    }
+    return NO_ERROR;
 }
 
 enum post_exp_t root_and_escape(void) {
@@ -74,6 +138,7 @@ enum post_exp_t root_and_escape(void) {
     uid_t current_uid = getuid();
     if(current_uid != 0) {
         ERROR("couldn't get r00t");
+        cleanup();
         return ERROR_GETTING_ROOT;
     } else {
         INFO("current UID: %d", getuid());
@@ -94,14 +159,14 @@ enum post_exp_t get_kernel_file(void) {
     NSString *docs = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
     mkdir((char *)[docs UTF8String], 0777);
     
-    NSString *newPath = [docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dump"]];
-    const char *location = [newPath UTF8String];
+    const char *location = [[docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dump"]] UTF8String];
     NSError *error = NULL;
         
     removeFile(location);
     error = NULL;
     copyFile(kernel_path, location);
     if (error) {
+        cleanup();
         return ERROR_ESCAPING_SANDBOX;
     }
     chown(location, 501, 501);
@@ -125,6 +190,7 @@ enum post_exp_t initialize_patchfinder64() {
     
     if (init_kernel(NULL, 0, decompressed_kernel_cache_path) != ERR_SUCCESS) {
         ERROR("failed to initialize patchfinder");
+        cleanup();
         return ERROR_SETTING_PATCHFINDER64;
     } else {
         INFO("patchfinder initialized successfully");
@@ -133,37 +199,54 @@ enum post_exp_t initialize_patchfinder64() {
 }
 
 enum post_exp_t bootstrap() {
+    enum post_exp_t clean_result = clean_up_previous();
+    if(clean_result != NO_ERROR) {
+        cleanup();
+        return clean_result;
+    }
+    
+    if(dump_offsets_to_file("/var/containers/Bundle/tweaksupport/offsets.data") != 0) {
+        ERROR("failed to save offsets");
+        cleanup();
+        return ERROR_SAVING_OFFSETS;
+    }
+    
+    prepare_payload();
+    
     NSError *error = NULL;
-    removeFile(binPath);
-
-    mkdir(binPath, 0777);
-    INFO("installing ios binary pack...");
+    removeFile("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear");
+    removeFile("/var/containers/Bundle/iosbinpack64/usr/bin/scp");
     
     chdir("/var/containers/Bundle/");
-    FILE *bootstrap = fopen([[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"iosbinpack.tar"] UTF8String], "r");
-    untar(bootstrap, "/var/containers/Bundle/");
-    fclose(bootstrap);
-    
-    removeFile(get_path("/usr/local/bin/dropbear"));
-    removeFile(get_path("/usr/bin/scp"));
-    
-    chdir("/var/containers/Bundle/");
-    FILE *fixed_dropbear = fopen([[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"dropbear.v2018.76.tar"] UTF8String], "r");
+    FILE *fixed_dropbear = fopen(in_bundle("dropbear.v2018.76.tar"), "r");
     untar(fixed_dropbear, "/var/containers/Bundle/");
     fclose(fixed_dropbear);
     INFO("installed Dropbear SSH!");
+    
+    removeFile("/var/containers/Bundle/iosbinpack64/bin/jailbreakd");
+    if (!fileExists(in_bundle("jailbreakd"))) {
+        chdir(in_bundle(""));
+        
+        FILE *jbd = fopen(in_bundle("jailbreakd.tar"), "r");
+        untar(jbd, in_bundle("jailbreakd"));
+        fclose(jbd);
+        
+        removeFile(in_bundle("jailbreakd.tar"));
+    }
+    copyFile(in_bundle("jailbreakd"), "/var/containers/Bundle/iosbinpack64/bin/jailbreakd");
 
     kernel_call_init();
-    trustbin(binPath, STATIC_ADDRESS(kernel_base) + kernel_slide);
+    trustbin("/var/containers/Bundle/iosbinpack64");
     kernel_call_deinit();
     
     mkdir("/var/dropbear", 0777);
     removeFile("/var/profile");
     removeFile("/var/motd");
     chmod("/var/profile", 0777);
+    chmod("/var/motd", 0777);
     
-    copyFile(get_path("/etc/profile"), "/var/profile");
-    copyFile(get_path("/etc/motd"), "/var/motd");
+    copyFile("/var/containers/Bundle/iosbinpack64/etc/profile", "/var/profile");
+    copyFile("/var/containers/Bundle/iosbinpack64/etc/motd", "/var/motd");
     FILE *motd = fopen("/var/motd", "w");
     struct utsname ut;
     uname(&ut);
@@ -172,13 +255,64 @@ enum post_exp_t bootstrap() {
     fclose(motd);
     chmod("/var/motd", 0777);
     
-    launch(get_path("/usr/bin/killall"), "-SEGV", "dropbear", NULL, NULL, NULL, NULL, NULL);
-    launchAsPlatform(get_path("/usr/local/bin/dropbear"), "-R", "-E", "-p", "22", "-p", "2222", NULL);
+    launch("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "-SEGV", "dropbear", NULL, NULL, NULL, NULL, NULL);
+//    launch_as_platform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", "-p", "22", "-p", "2222", NULL);
     
+    if(fileExists(in_bundle("dropbear.plist"))) {
+        removeFile("/var/containers/Bundle/iosbinpack64/LaunchDaemons/dropbear.plist");
+        copyFile(in_bundle("dropbear.plist"), "/var/containers/Bundle/iosbinpack64/LaunchDaemons/dropbear.plist");
+    }
+    if(fileExists(in_bundle("jailbreakd.plist"))) {
+        removeFile("/var/containers/Bundle/iosbinpack64/LaunchDaemons/jailbreakd.plist");
+        copyFile(in_bundle("jailbreakd.plist"), "/var/containers/Bundle/iosbinpack64/LaunchDaemons/jailbreakd.plist");
+    }
+    //------------- launch daeamons -------------//
+    //-- you can drop any daemon plist in iosbinpack64/LaunchDaemons and it will be loaded automatically --//
+    NSArray *plists = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:@"/var/containers/Bundle/iosbinpack64/LaunchDaemons" error:nil];
+    
+    for (__strong NSString *file in plists) {
+        INFO("adding permissions to plist %s", [file UTF8String]);
+        
+        file = [@"/var/containers/Bundle/iosbinpack64/LaunchDaemons" stringByAppendingPathComponent:file];
+        
+        if (strstr([file UTF8String], "jailbreakd")) {
+            INFO("found jailbreakd plist, special handling");
+            
+            NSMutableDictionary *job = [NSPropertyListSerialization propertyListWithData:[NSData dataWithContentsOfFile:file] options:NSPropertyListMutableContainers format:nil error:nil];
+            
+            job[@"EnvironmentVariables"][@"KernelBase"] = [NSString stringWithFormat:@"0x%16llx", kernel_load_base];
+            [job writeToFile:file atomically:YES];
+        }
+        
+        chmod([file UTF8String], 0644);
+        chown([file UTF8String], 0, 0);
+    }
+    
+    // clean up
+    removeFile("/var/log/testbin.log");
+    removeFile("/var/log/jailbreakd-stderr.log");
+    removeFile("/var/log/jailbreakd-stdout.log");
+    
+    launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "unload", "/var/containers/Bundle/iosbinpack64/LaunchDaemons", NULL, NULL, NULL, NULL, NULL);
+    launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "load", "/var/containers/Bundle/iosbinpack64/LaunchDaemons", NULL, NULL, NULL, NULL, NULL);
+    
+    sleep(1);
+    
+    if(!fileExists("/var/log/testbin.log")) {
+        ERROR("failed to load launch daemons");
+        cleanup();
+        return ERROR_LOADING_LAUNCHDAEMONS;
+    }
+    if(!fileExists("/var/log/jailbreakd-stdout.log")) {
+        ERROR("failed to load jailbreakd");
+        cleanup();
+        return ERROR_LOADING_JAILBREAKD;
+    }
     return NO_ERROR;
 }
 
 void cleanup(void) {
+    INFO("cleaning up");
     term_kernel();
     restore_csflags(current_task);
     sandbox(current_task);
