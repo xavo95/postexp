@@ -12,7 +12,6 @@
 #import <unistd.h>
 #import <sys/stat.h>
 #import <sys/utsname.h>
-#include <spawn.h>
 
 #include "kernel_memory.h"
 #include "kernel_call.h"
@@ -24,6 +23,7 @@
 #include "sandbox.h"
 #include "log.h"
 #include "post-common.h"
+#include "launch_utils.h"
 
 #include "patchfinder64.h"
 #include "macho-helper.h"
@@ -31,50 +31,36 @@
 #include "untar.h"
 #include "amfi_utils.h"
 
-NSString *binPath = @"/var/containers/Bundle/iosbinpack64";
-NSString *kernelPath = @"/System/Library/Caches/com.apple.kernelcaches/kernelcache";
+#define fileExists(file) [[NSFileManager defaultManager] fileExistsAtPath:@(file)]
 
-int launch(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
-    pid_t pd;
-    const char* args[] = {binary, arg1, arg2, arg3, arg4, arg5, arg6,  NULL};
-    
-    int rv = posix_spawn(&pd, binary, NULL, NULL, (char **)&args, env);
-    if (rv) {
-        ERROR("error spawing process %s", strerror(rv));
-        return rv;
-    }
-    
-    int a = 0;
-    waitpid(pd, &a, 0);
-    
-    return WEXITSTATUS(a);
+#define removeFile(file) if (fileExists(file)) {\
+[[NSFileManager defaultManager]  removeItemAtPath:@(file) error:&error]; \
+if (error) { \
+ERROR("error removing file %s (%s)", file, [[error localizedDescription] UTF8String]); \
+} else {\
+INFO("deleted old copy from %s", file);\
+}\
 }
 
-int launchAsPlatform(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
-    pid_t pd;
-    const char* args[] = {binary, arg1, arg2, arg3, arg4, arg5, arg6,  NULL};
+#define copyFile(copyFrom, copyTo) [[NSFileManager defaultManager] copyItemAtPath:@(copyFrom) toPath:@(copyTo) error:&error]; \
+INFO("copying %s to %s", copyFrom, copyTo);\
+if (error) { \
+ERROR("error copying item %s to path %s (%s)", copyFrom, copyTo, [[error localizedDescription] UTF8String]); \
+}
 
-    posix_spawnattr_t attr;
-    posix_spawnattr_init(&attr);
-    posix_spawnattr_setflags(&attr, POSIX_SPAWN_START_SUSPENDED); //this flag will make the created process stay frozen until we send the CONT signal. This so we can platformize it before it launches.
+#define moveFile(copyFrom, moveTo) [[NSFileManager defaultManager] moveItemAtPath:@(copyFrom) toPath:@(moveTo) error:&error]; \
+if (error) {\
+ERROR("error moving item %s to path %s (%s)", copyFrom, moveTo, [[error localizedDescription] UTF8String]); \
+}
 
-    int rv = posix_spawn(&pd, binary, NULL, &attr, (char **)&args, env);
-    if (rv) {
-        ERROR("error spawing process %s", strerror(rv));
-        return rv;
-    }
+const char *binPath = "/var/containers/Bundle/iosbinpack64";
+const char *kernel_path = "/System/Library/Caches/com.apple.kernelcaches/kernelcache";
 
-    kern_return_t kret;
-    mach_port_t task;
-    kret = task_for_pid(mach_host_self(), pd, &task);
-    platformize(task);
-
-    kill(pd, SIGCONT); //continue
-
-    int a = 0;
-    waitpid(pd, &a, 0);
-
-    return WEXITSTATUS(a);
+char *get_path(char *path) {
+    char *res = "";
+    strcpy(res, (char *)binPath);
+    strcat(res, path);
+    return res;
 }
 
 enum post_exp_t root_and_escape(void) {
@@ -105,50 +91,39 @@ enum post_exp_t root_and_escape(void) {
 }
 
 enum post_exp_t get_kernel_file(void) {
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *docs = [[[fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
+    NSString *docs = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
     mkdir((char *)[docs UTF8String], 0777);
     
     NSString *newPath = [docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dump"]];
     const char *location = [newPath UTF8String];
-    if(!compareFiles([kernelPath UTF8String], location)) {
-        NSError *error;
-        [fileManager removeItemAtPath:newPath error:&error];
-        if(!error) {
-            INFO("deleted old copy from %s", location);
-        }
+    NSError *error = NULL;
         
-        INFO("copying to %s", location);
-        error = nil;
-        [fileManager copyItemAtPath:kernelPath toPath:newPath error:&error];
-        if (error) {
-            ERROR("failed to copy kernelcache with error: %s", [[error localizedDescription] UTF8String]);
-            return ERROR_ESCAPING_SANDBOX;
-        } else {
-            chown(location, 501, 501);
-        }
+    removeFile(location);
+    error = NULL;
+    copyFile(kernel_path, location);
+    if (error) {
+        return ERROR_ESCAPING_SANDBOX;
     }
+    chown(location, 501, 501);
     return NO_ERROR;
 }
 
 enum post_exp_t initialize_patchfinder64() {
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *docs = [[[fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
-    NSString *oldPath = [docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dump"]];
-    NSString *newPath = [docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dec"]];
-    const char *original_kernel_cache_path = [oldPath UTF8String];
-    const char *decompressed_kernel_cache_path = [newPath UTF8String];
+    NSString *docs = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
+    const char *original_kernel_cache_path = [[docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dump"]] UTF8String];
+    const char *decompressed_kernel_cache_path = [[docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dec"]] UTF8String];
     
-    if (![fileManager fileExistsAtPath:newPath]) {
-        FILE *original_kernel_cache = fopen(original_kernel_cache_path, "rb");
-        uint32_t macho_header_offset = find_macho_header(original_kernel_cache);
-        char *args[5] = { "lzssdec", "-o", (char *)[NSString stringWithFormat:@"0x%x", macho_header_offset].UTF8String, (char *)original_kernel_cache_path, (char *)decompressed_kernel_cache_path};
-        lzssdec(5, args);
-        fclose(original_kernel_cache);
-        chown(decompressed_kernel_cache_path, 501, 501);
-    }
+    NSError *error = NULL;
+    removeFile(decompressed_kernel_cache_path);
+    
+    FILE *original_kernel_cache = fopen(original_kernel_cache_path, "rb");
+    uint32_t macho_header_offset = find_macho_header(original_kernel_cache);
+    char *args[5] = { "lzssdec", "-o", (char *)[NSString stringWithFormat:@"0x%x", macho_header_offset].UTF8String, (char *)original_kernel_cache_path, (char *)decompressed_kernel_cache_path};
+    lzssdec(5, args);
+    fclose(original_kernel_cache);
+    chown(decompressed_kernel_cache_path, 501, 501);
+    
     if (init_kernel(NULL, 0, decompressed_kernel_cache_path) != ERR_SUCCESS) {
-        [fileManager removeItemAtPath:newPath error:NULL];
         ERROR("failed to initialize patchfinder");
         return ERROR_SETTING_PATCHFINDER64;
     } else {
@@ -157,12 +132,11 @@ enum post_exp_t initialize_patchfinder64() {
     }
 }
 
-enum post_exp_t launch_dropbear() {
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    if ([fileManager fileExistsAtPath:binPath]) {
-        [fileManager removeItemAtPath:binPath error:NULL];
-    }
-    mkdir((char *)[binPath UTF8String], 0777);
+enum post_exp_t bootstrap() {
+    NSError *error = NULL;
+    removeFile(binPath);
+
+    mkdir(binPath, 0777);
     INFO("installing ios binary pack...");
     
     chdir("/var/containers/Bundle/");
@@ -170,8 +144,8 @@ enum post_exp_t launch_dropbear() {
     untar(bootstrap, "/var/containers/Bundle/");
     fclose(bootstrap);
     
-    [fileManager removeItemAtPath:[binPath stringByAppendingString:@"usr/local/bin/dropbear"] error:NULL];
-    [fileManager removeItemAtPath:[binPath stringByAppendingString:@"usr/bin/scp"] error:NULL];
+    removeFile(get_path("/usr/local/bin/dropbear"));
+    removeFile(get_path("/usr/bin/scp"));
     
     chdir("/var/containers/Bundle/");
     FILE *fixed_dropbear = fopen([[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"dropbear.v2018.76.tar"] UTF8String], "r");
@@ -180,13 +154,16 @@ enum post_exp_t launch_dropbear() {
     INFO("installed Dropbear SSH!");
 
     kernel_call_init();
-    trustbin("/var/containers/Bundle/iosbinpack64", STATIC_ADDRESS(kernel_base) + kernel_slide);
+    trustbin(binPath, STATIC_ADDRESS(kernel_base) + kernel_slide);
     kernel_call_deinit();
     
     mkdir("/var/dropbear", 0777);
-    [fileManager removeItemAtPath:@"/var/profile" error:NULL];
-    [fileManager removeItemAtPath:@"/var/motd" error:NULL];
+    removeFile("/var/profile");
+    removeFile("/var/motd");
     chmod("/var/profile", 0777);
+    
+    copyFile(get_path("/etc/profile"), "/var/profile");
+    copyFile(get_path("/etc/motd"), "/var/motd");
     FILE *motd = fopen("/var/motd", "w");
     struct utsname ut;
     uname(&ut);
@@ -195,11 +172,8 @@ enum post_exp_t launch_dropbear() {
     fclose(motd);
     chmod("/var/motd", 0777);
     
-    [fileManager copyItemAtPath:@"/var/containers/Bundle/iosbinpack64/etc/profile" toPath:@"/var/profile" error:NULL];
-    [fileManager copyItemAtPath:@"/var/containers/Bundle/iosbinpack64/etc/motd" toPath:@"/var/motd" error:NULL];
-    
-    launch("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "-SEGV", "dropbear", NULL, NULL, NULL, NULL, NULL);
-    launchAsPlatform([[binPath stringByAppendingPathComponent:@"usr/local/bin/dropbear"] UTF8String], "-R", "-E", "-p", "22", "-p", "2222", NULL);
+    launch(get_path("/usr/bin/killall"), "-SEGV", "dropbear", NULL, NULL, NULL, NULL, NULL);
+    launchAsPlatform(get_path("/usr/local/bin/dropbear"), "-R", "-E", "-p", "22", "-p", "2222", NULL);
     
     return NO_ERROR;
 }

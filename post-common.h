@@ -38,22 +38,6 @@ uint64_t kernel_get_ucred_for_task(uint64_t task);
 uint64_t kernel_get_cr_label_for_task(uint64_t task);
 
 /*
- * sha512OfPath
- *
- * Description:
- *     Get the sha512 for a file in a path, returns empty string if file not exists.
- */
-const char *sha512OfPath(const char *path);
-
-/*
- * compareFiles
- *
- * Description:
- *     Compares two files given their locations in the file system.
- */
-bool compareFiles(const char *from, const char *to);
-
-/*
  * kalloc
  *
  * Description:

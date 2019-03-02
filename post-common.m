@@ -33,38 +33,6 @@ uint64_t kernel_get_cr_label_for_task(uint64_t task) {
     return kernel_read64(ucred + off_ucred_cr_label);
 }
 
-const char *sha512OfPath(const char *path) {
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    // Make sure the file exists
-    NSString *pathNS = [NSString stringWithCString:path encoding:NSASCIIStringEncoding];
-    if([fileManager fileExistsAtPath:pathNS isDirectory:nil]) {
-        NSData *data = [NSData dataWithContentsOfFile:pathNS];
-        unsigned char digest[CC_SHA512_DIGEST_LENGTH];
-        CC_SHA512( data.bytes, (CC_LONG)data.length, digest);
-        
-        NSMutableString *output = [NSMutableString stringWithCapacity:CC_SHA512_DIGEST_LENGTH * 2];
-        for( int i = 0; i < CC_SHA512_DIGEST_LENGTH; i++ ) {
-            [output appendFormat:@"%02x", digest[i]];
-        }
-        return [output UTF8String];
-    } else {
-        return "";
-    }
-}
-
-bool compareFiles(const char *from, const char *to) {
-    NSString *fromSHA512 = [NSString stringWithCString:sha512OfPath(from) encoding:NSASCIIStringEncoding];
-    NSString *toSHA512 = [NSString stringWithCString:sha512OfPath(to) encoding:NSASCIIStringEncoding];
-    if([fromSHA512 isEqual: @""] || [toSHA512 isEqual: @""]) {
-        return false;
-    }
-    if(![fromSHA512 isEqual:toSHA512]) {
-        return false;
-    } else {
-        return true;
-    }
-}
-
 uint64_t kalloc(vm_size_t size) {
     mach_vm_address_t address = 0;
     mach_vm_allocate(kernel_task_port, (mach_vm_address_t *)&address, size, VM_FLAGS_ANYWHERE);
