@@ -11,16 +11,15 @@
 #import <UIKit/UIKit.h>
 
 #include "post-common.h"
-#include "kernel_memory.h"
-#include "kernel_call.h"
-#include "parameters.h"
+#include "kmem.h"
+#include "offsets.h"
 #include "offsetof.h"
 #include "mach_vm.h"
 #include "log.h"
 #include "amfi_utils.h"
 
 uint64_t kernel_get_proc_for_task(uint64_t task) {
-    return kernel_read64(task + OFFSET(task, bsd_info));
+    return kernel_read64(task + _koffset(KSTRUCT_OFFSET_TASK_BSD_INFO));
 }
 
 uint64_t kernel_get_ucred_for_task(uint64_t task) {
@@ -39,8 +38,12 @@ uint64_t kalloc(vm_size_t size) {
     return address;
 }
 
-void kfree(mach_vm_address_t address, vm_size_t size) {
-    mach_vm_deallocate(kernel_task_port, address, size);
+bool kfree(mach_vm_address_t address, vm_size_t size) {
+    kern_return_t kr = mach_vm_deallocate(kernel_task_port, address, size);
+    if (kr != KERN_SUCCESS) {
+        return false;
+    }
+    return true;
 }
 
 size_t kread(uint64_t address, void *data, size_t size) {

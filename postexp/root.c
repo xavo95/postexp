@@ -7,7 +7,7 @@
 //
 
 #include "root.h"
-#include "kernel_memory.h"
+#include "kmem.h"
 #include "post-common.h"
 #include "offsetof.h"
 

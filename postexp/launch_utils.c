@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <mach/mach.h>
 #include "sandbox.h"
+#include "kernel_utils.h"
 
 int launch(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
     pid_t pd;
@@ -46,11 +47,7 @@ int launch_as_platform(char *binary, char *arg1, char *arg2, char *arg3, char *a
         return rv;
     }
     
-    kern_return_t kret;
-    mach_port_t task;
-    kret = task_for_pid(mach_host_self(), pd, &task);
-    platformize(task);
-    
+    platformize_pid(pd);
     kill(pd, SIGCONT); //continue
     
     int a = 0;

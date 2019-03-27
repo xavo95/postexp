@@ -8,15 +8,14 @@
 //
 
 #include "amfi_utils.h"
-#include "patchfinder64.h"
+#include "offsets_dump.h"
 #include "macho-helper.h"
+#include "kmem.h"
 #include "kernel_call.h"
-#include "kernel_slide.h"
-#include "kernel_memory.h"
+#include "kernel_utils.h"
 #include "post-common.h"
 #include <stdlib.h>
 #include <string.h>
-#import <sys/utsname.h>
 #include <mach-o/loader.h>
 #include <mach-o/fat.h>
 #include <sys/stat.h>
@@ -169,30 +168,20 @@ int strtail(const char *str, const char *tail)
 void inject_trusts(int pathc, NSMutableArray *paths) {
     INFO("injecting into trust cache...");
     
-    struct utsname ut;
-    uname(&ut);
     static uint64_t tc = 0;
     if (tc == 0) {
-        /* loaded_trust_caches
-         iPhone11,2-4-6: 0xFFFFFFF008F702C8
-         iPhone11,8: 0xFFFFFFF008ED42C8
-         */
-        if(strcmp("iPhone11,8", ut.machine) == 0) {
-            tc = kernel_slide + 0xFFFFFFF008ED42C8;
-        } else {
-            tc = kernel_slide + 0xFFFFFFF008F702C8;
-        }
+        tc = cached_offsets.trustcache;
     }
     
     INFO("trust cache: 0x%llx", tc);
     
     struct trust_chain fake_chain;
     fake_chain.next = kernel_read64(tc);
-#if (0)
+#if __arm64e__
+    arc4random_buf(&fake_chain.uuid, 16);
+#else
     *(uint64_t *)&fake_chain.uuid[0] = 0xabadbabeabadbabe;
     *(uint64_t *)&fake_chain.uuid[8] = 0xabadbabeabadbabe;
-#else
-    arc4random_buf(&fake_chain.uuid, 16);
 #endif
     
     int cnt = 0;
@@ -219,24 +208,16 @@ void inject_trusts(int pathc, NSMutableArray *paths) {
     kernel_write(kernel_trust + sizeof(fake_chain), allhash, cnt * sizeof(hash_t));
     INFO("writing trust cache");
     
-#if (0)
-    kernel_write64(tc, kernel_trust);
-#else
+#if __arm64e__
     uint64_t f_load_trust_cache = 0;
-    /* load_trust_cache
-     iPhone11,2-4-6: 0xFFFFFFF007B80504
-     iPhone11,8: 0xFFFFFFF007B50504
-     */
-    if(strcmp("iPhone11,8", ut.machine) == 0) {
-        f_load_trust_cache = kernel_slide + 0xFFFFFFF007B50504;
-    } else {
-        f_load_trust_cache = kernel_slide + 0xFFFFFFF007B80504;
-    }
+    f_load_trust_cache = cached_offsets.f_load_trust_cache;
     uint32_t ret = kernel_call_7(f_load_trust_cache, 3,
                                  kernel_trust,
                                  length,
                                  0);
     INFO("load_trust_cache: 0x%x", ret);
+#else
+    kernel_write64(tc, kernel_trust);
 #endif
     
     INFO("injected trust cache");
@@ -254,7 +235,7 @@ int trustbin(const char *path) {
     
     BOOL isDir = NO;
     if (![fileManager fileExistsAtPath:@(path) isDirectory:&isDir]) {
-        printf("[-] Path does not exist!\n");
+        ERROR("path does not exist!");
         return -1;
     }
     
@@ -267,7 +248,7 @@ int trustbin(const char *path) {
                                              includingPropertiesForKeys:keys
                                              options:0
                                              errorHandler:^(NSURL *url, NSError *error) {
-                                             if (error) printf("[-] %s\n", [[error localizedDescription] UTF8String]);
+                                             if (error) ERROR("%s", [[error localizedDescription] UTF8String]);
                                              return YES;
                                              }];
         
@@ -319,17 +300,17 @@ int trustbin(const char *path) {
                 }
                 
                 [paths addObject:@(fpath)];
-                printf("[*] Will trust %s\n", fpath);
+                INFO("will trust %s", fpath);
                 free(fpath);
             }
         }
         if ([paths count] == 0) {
-            printf("[-] No files in %s passed the integrity checks!\n", path);
+            ERROR("no files in %s passed the integrity checks!", path);
             return -2;
         }
     }
     else {
-        printf("[*] Will trust %s\n", path);
+        INFO("will trust %s", path);
         [paths addObject:@(path)];
         
         int rv;
@@ -340,91 +321,42 @@ int trustbin(const char *path) {
         uint8_t buf[16];
         
         if (strtail(path, ".plist") == 0 || strtail(path, ".nib") == 0 || strtail(path, ".strings") == 0 || strtail(path, ".png") == 0) {
-            printf("[-] Binary not an executable! Kernel doesn't like trusting data, geez\n");
+            ERROR("binary not an executable! Kernel doesn't like trusting data, geez");
             return 2;
         }
         
         rv = lstat(path, &st);
         if (rv || !S_ISREG(st.st_mode) || st.st_size < 0x4000) {
-            printf("[-] Binary too big\n");
+            ERROR("binary too big");
             return 3;
         }
         
         fd = open(path, O_RDONLY);
         if (fd < 0) {
-            printf("[-] Don't have permission to open file\n");
+            ERROR("don't have permission to open file");
             return 4;
         }
         
         sz = read(fd, buf, sizeof(buf));
         if (sz != sizeof(buf)) {
             close(fd);
-            printf("[-] Failed to read from binary\n");
+            ERROR("failed to read from binary");
             return 5;
         }
         if (*(uint32_t *)buf != 0xBEBAFECA && !MACHO(buf)) {
             close(fd);
-            printf("[-] Binary not a macho!\n");
+            ERROR("binary not a macho!");
             return 6;
         }
         
         p = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
         if (p == MAP_FAILED) {
             close(fd);
-            printf("[-] Failed to mmap file\n");
+            ERROR("failed to mmap file");
             return 7;
         }
     }
     
     inject_trusts([paths count], paths);
-    
-//    bool isA12 = false;
-//    uint64_t trust_chain = Find_trustcache();
-//    if (!trust_chain) {
-//        trust_chain = 0xFFFFFFF008F702C8 + kernel_slide;
-//        isA12 = true;
-//    }
-//
-//    printf("[*] trust_chain at 0x%llx\n", trust_chain);
-//
-//    struct trust_chain fake_chain;
-//    fake_chain.next = kernel_read64(trust_chain);
-//    *(uint64_t *)&fake_chain.uuid[0] = 0xabadbabeabadbabe;
-//    *(uint64_t *)&fake_chain.uuid[8] = 0xabadbabeabadbabe;
-//
-//    int cnt = 0;
-//    uint8_t hash[CC_SHA256_DIGEST_LENGTH];
-//    hash_t *allhash = malloc(sizeof(hash_t) * [paths count]);
-//    for (int i = 0; i != [paths count]; ++i) {
-//        uint8_t *cd = getCodeDirectory((char*)[[paths objectAtIndex:i] UTF8String]);
-//        if (cd != NULL) {
-//            getSHA256inplace(cd, hash);
-//            memmove(allhash[cnt], hash, sizeof(hash_t));
-//            ++cnt;
-//        }
-//        else {
-//            printf("[-] CD NULL\n");
-//            continue;
-//        }
-//    }
-//
-//    fake_chain.count = cnt;
-//
-//    size_t length = (sizeof(fake_chain) + cnt * sizeof(hash_t) + 0xFFFF) & ~0xFFFF;
-//    uint64_t kernel_trust = kalloc(length);
-//    printf("[*] allocated: 0x%zx => 0x%llx\n", length, kernel_trust);
-//
-//    kernel_write(kernel_trust, &fake_chain, sizeof(fake_chain));
-//    kernel_write(kernel_trust + sizeof(fake_chain), allhash, cnt * sizeof(hash_t));
-//
-//    if (isA12) {
-//        kernel_call_7(0xFFFFFFF007B80504 + kernel_slide, 3, kernel_trust, length, 0);
-//    }
-//    else {
-//        kernel_write64(trust_chain, kernel_trust);
-//    }
-//
-//    free(allhash);
-    
     return 0;
 }

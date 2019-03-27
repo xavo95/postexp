@@ -46,12 +46,12 @@ char* prepare_directory(char* dir_path) {
         char* full_entry_path = NULL;
         asprintf(&full_entry_path, "/var/containers/Bundle/iosbinpack64/%s/%s", dir_path, entry);
         
-        INFO("preparing: %s\n", full_entry_path);
+        INFO("preparing: %s", full_entry_path);
         
         // make that executable:
         int chmod_err = chmod(full_entry_path, 0777);
         if (chmod_err != 0){
-            ERROR("chmod failed\n");
+            ERROR("chmod failed");
         }
         
         free(full_entry_path);

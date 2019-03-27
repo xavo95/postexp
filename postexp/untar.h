@@ -11,6 +11,12 @@
 
 #include <stdio.h>
 
+/*
+ * untar
+ *
+ * Description:
+ *     Untar a file to a specific task.
+ */
 void untar(FILE *a, const char *path);
 
 #endif /* tar_h */

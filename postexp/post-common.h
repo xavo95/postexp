@@ -51,7 +51,7 @@ uint64_t kalloc(vm_size_t size);
  * Description:
  *     Free data from kernel memory.
  */
-void kfree(mach_vm_address_t address, vm_size_t size);
+bool kfree(mach_vm_address_t address, vm_size_t size);
 
 /*
  * kread

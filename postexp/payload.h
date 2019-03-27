@@ -11,6 +11,12 @@
 
 #include <stdio.h>
 
+/*
+ * prepare_payload
+ *
+ * Description:
+ *     Chmod all 777.
+ */
 char* prepare_payload(void);
 
 #endif /* payload_h */
