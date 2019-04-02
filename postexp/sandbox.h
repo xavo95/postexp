@@ -45,14 +45,6 @@ bool sandbox(uint64_t task);
 bool setcsflags(uint64_t task);
 
 /*
- * platformize
- *
- * Description:
- *     Modify our proc struc to become a platform binary.
- */
-void platformize(uint64_t task);
-
-/*
  * restore_csflags
  *
  * Description:
@@ -61,11 +53,51 @@ void platformize(uint64_t task);
 void restore_csflags(uint64_t task);
 
 /*
- * platformize_pid
+ * platformize
  *
  * Description:
  *     Modify our proc struc to become a platform binary.
  */
-void platformize_pid(pid_t pid);
+void platformize(uint64_t task);
+
+/*
+ * unplatformize
+ *
+ * Description:
+ *     Modify our proc struc to become a platform binary.
+ */
+void unplatformize(uint64_t task);
+
+/*
+ * unsandbox
+ *
+ * Description:
+ *     Modify our proc struc to escape sandbox.
+ */
+bool unsandbox_given_pid(pid_t pid);
+
+/*
+ * sandbox
+ *
+ * Description:
+ *     Modify our proc struc to get back to sandbox.
+ */
+bool sandbox_given_pid(pid_t pid);
+
+/*
+ * platformize_given_pid
+ *
+ * Description:
+ *     Modify our proc struc to become a platform binary.
+ */
+void platformize_given_pid(pid_t pid);
+
+/*
+ * unplatformize_given_pid
+ *
+ * Description:
+ *     Modify our proc struc to become a platform binary.
+ */
+void unplatformize_given_pid(pid_t pid);
 
 #endif /* sandbox_h */

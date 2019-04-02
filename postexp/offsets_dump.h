@@ -11,6 +11,19 @@
 
 #include <stdio.h>
 
+#ifdef CLASSIC_FILE_STYLE
+
+#else
+
+#include "offsetcache.h"
+
+#define SETOFFSET(offset, val) set_offset(#offset, val)
+#define GETOFFSET(offset) get_offset(#offset)
+
+#endif
+
+#ifdef CLASSIC_FILE_STYLE
+
 struct patchfinder_offsets {
     uint64_t allproc;
     uint64_t OSBooleanTrue;
@@ -62,5 +75,17 @@ void set_cached_offsets(double kCFCoreFoundationVersionNumber);
  *     Dump relevant offsets to file.
  */
 int dump_offsets_to_file(char *file);
+
+#else
+
+/*
+ * set_cached_offsets
+ *
+ * Description:
+ *     Caches the offsets so we can shutdown patchfinder
+ */
+void set_cached_offsets(double kCFCoreFoundationVersionNumber);
+
+#endif
 
 #endif /* offsetsDump_h */

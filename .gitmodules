@@ -1,3 +1,6 @@
 [submodule "patchfinder64"]
 	path = patchfinder64
 	url = git@github.com:xavo95/patchfinder64.git
+[submodule "offset-cache"]
+	path = offset-cache
+	url = https://github.com/sbingner/offset-cache.git

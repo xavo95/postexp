@@ -47,7 +47,7 @@ int launch_as_platform(char *binary, char *arg1, char *arg2, char *arg3, char *a
         return rv;
     }
     
-    platformize_pid(pd);
+    platformize_given_pid(pd);
     kill(pd, SIGCONT); //continue
     
     int a = 0;

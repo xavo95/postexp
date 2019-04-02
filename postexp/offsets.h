@@ -37,6 +37,7 @@ enum _kstruct_offset {
     /* struct proc */
     KSTRUCT_OFFSET_PROC_PID,
     KSTRUCT_OFFSET_PROC_P_FD,
+    KSTRUCT_OFFSET_PROC_P_LIST,
     
     /* struct filedesc */
     KSTRUCT_OFFSET_FILEDESC_FD_OFILES,

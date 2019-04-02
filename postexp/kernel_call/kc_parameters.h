@@ -88,6 +88,7 @@ extern size_t OFFSET(kernel_forge_pacxa_gadget_buffer, pacia_result);
 extern size_t OFFSET(kernel_forge_pacxa_gadget_buffer, pacda_result);
 
 extern struct vtable_pac_codes VTABLE_PAC_CODES(IOAudio2DeviceUserClient);
+extern struct vtable_pac_codes VTABLE_PAC_CODES(IODTNVRAM);
 
 // Parameters for IOAudio2DeviceUserClient.
 extern size_t OFFSET(IOAudio2DeviceUserClient, traps);
@@ -110,7 +111,7 @@ extern uint32_t VTABLE_INDEX(IOUserClient, getTargetAndTrapForIndex);
  * kernel_call_parameters_init
  *
  * Description:
- * 	Initialize the addresses used in the kernel_call subsystem.
+ *     Initialize the addresses used in the kernel_call subsystem.
  */
 bool kernel_call_parameters_init(void);
 

@@ -210,14 +210,14 @@ void make_port_fake_task_port(mach_port_t port, uint64_t task_kaddr) {
 }
 
 uint64_t proc_of_pid(pid_t pid) {
-    uint64_t proc = kernel_read64(cached_offsets.allproc);
-    while (proc) { //iterate over all processes till we find the one we're looking for
-        uint32_t pd = kernel_read32(proc + off_p_pid);
-        if (pd == pid) return proc;
-        proc = kernel_read64(proc);
+    uint64_t proc = kernel_read64(kernel_read64(GETOFFSET(kernel_task)) + _koffset(KSTRUCT_OFFSET_TASK_BSD_INFO));
+    while (proc) {
+        if (kernel_read32(proc + _koffset(KSTRUCT_OFFSET_PROC_PID)) == pid)
+            return proc;
+        proc = kernel_read64(proc + _koffset(KSTRUCT_OFFSET_PROC_P_LIST));
     }
-    
     return 0;
+
 }
 
 uint64_t slide_addr(uint64_t src_addr) {
@@ -255,8 +255,10 @@ bool verify_tfp0() {
     return true;
 }
 
-uint64_t find_kernel_base() {
-    uint64_t hostport_addr = get_address_of_port(getpid(), mach_host_self());
+uint64_t find_kernel_base(void) {
+    host_t host = mach_host_self();
+    uint64_t hostport_addr = get_address_of_port(getpid(), host);
+    mach_port_deallocate(mach_task_self(), host);
     uint64_t realhost = kernel_read64(hostport_addr + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT));
     
     uint64_t base = realhost & ~0xfffULL;

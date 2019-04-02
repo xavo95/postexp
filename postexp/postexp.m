@@ -11,7 +11,6 @@
 #import <UIKit/UIKit.h>
 #import <unistd.h>
 #import <sys/stat.h>
-#import <sys/utsname.h>
 
 #include "kmem.h"
 #include "kernel_utils.h"
@@ -23,16 +22,15 @@
 #include "log.h"
 #include "post-common.h"
 #include "launch_utils.h"
-#include "payload.h"
 #include "offsets_dump.h"
 #include "remap_tfp_set_hsp.h"
+#include "kernel_call/kc_parameters.h"
 
 #include "patchfinder64.h"
-#include "macho-helper.h"
-#include "lzssdec.hpp"
 #include "untar.h"
 #include "amfi_utils.h"
-#include "utils.h"
+
+#import "kerneldec/kerneldec.h"
 
 #define in_bundle(obj) strdup([[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@obj] UTF8String])
 
@@ -59,15 +57,25 @@ ERROR("error moving item %s to path %s (%s)", copyFrom, moveTo, [[error localize
 }
 
 const char *kernel_path = "/System/Library/Caches/com.apple.kernelcaches/kernelcache";
-bool static_kernel = false;
+bool found_offsets = false;
 
-enum post_exp_t recover_with_hsp4(bool use_static_kernel, uint64_t *ext_kernel_slide, uint64_t *ext_kernel_load_base) {
+enum post_exp_t recover_with_hsp4(mach_port_t tfp0, uint64_t *ext_kernel_slide, uint64_t *ext_kernel_load_base) {
     struct task_dyld_info dyld_info = { 0 };
     mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
-    if((host_get_special_port(mach_host_self(), HOST_LOCAL_NODE, 4, &kernel_task_port) == KERN_SUCCESS) && MACH_PORT_VALID(kernel_task_port)) {
+    if((host_get_special_port(mach_host_self(), HOST_LOCAL_NODE, 4, &tfp0) == KERN_SUCCESS) && MACH_PORT_VALID(tfp0)) {
         if(task_info(kernel_task_port, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
-            kernel_load_base = dyld_info.all_image_info_addr;
+            kernel_task_port = tfp0;
             kernel_slide = dyld_info.all_image_info_size;
+            size_t blob_size = kernel_read64(dyld_info.all_image_info_addr);
+            INFO("Restoring persisted offsets cache");
+            struct cache_blob *blob = create_cache_blob(blob_size);
+            if(kernel_read(dyld_info.all_image_info_addr, blob, blob_size)) {
+                import_cache_blob(blob);
+                free(blob);
+                kernel_slide = GETOFFSET(kernel_slide);
+                kernel_load_base = GETOFFSET(kernel_load_base);
+                found_offsets = true;
+            }
             *ext_kernel_slide = kernel_slide;
             *ext_kernel_load_base = kernel_load_base;
             return NO_ERROR;
@@ -76,26 +84,25 @@ enum post_exp_t recover_with_hsp4(bool use_static_kernel, uint64_t *ext_kernel_s
     return ERROR_TFP0_NOT_RECOVERED;
 }
 
-enum post_exp_t init(mach_port_t tfp0, bool use_static_kernel, uint64_t *ext_kernel_slide, uint64_t *ext_kernel_load_base) {
+enum post_exp_t init(mach_port_t tfp0, uint64_t *ext_kernel_slide, uint64_t *ext_kernel_load_base) {
     // Initialize offsets
     _offsets_init();
     
     kernel_task_port = tfp0;
-    static_kernel = use_static_kernel;
     if((*ext_kernel_slide != 0) && (*ext_kernel_load_base != 0)) {
         kernel_load_base = *ext_kernel_load_base;
         kernel_slide = *ext_kernel_slide;
     } else if((*ext_kernel_slide == 0) && (*ext_kernel_load_base != 0)) {
         kernel_load_base = *ext_kernel_load_base;
-        kernel_slide = kernel_load_base - kernel_base;
+        kernel_slide = kernel_load_base - static_kernel_base;
         *ext_kernel_slide = kernel_slide;
     } else if((*ext_kernel_slide != 0) && (*ext_kernel_load_base == 0)) {
         kernel_slide = *ext_kernel_slide;
-        kernel_load_base = kernel_base + kernel_slide;
+        kernel_load_base = static_kernel_base + kernel_slide;
         *ext_kernel_load_base = kernel_load_base;
     } else {
         kernel_load_base = find_kernel_base();
-        kernel_slide = kernel_load_base - kernel_base;
+        kernel_slide = kernel_load_base - static_kernel_base;
         *ext_kernel_slide = kernel_slide;
         *ext_kernel_load_base = kernel_load_base;
     }
@@ -156,46 +163,66 @@ enum post_exp_t get_kernel_file(void) {
     return NO_ERROR;
 }
 
-enum post_exp_t initialize_patchfinder64() {
-    if(static_kernel) {
-        NSString *docs = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
-        const char *original_kernel_cache_path = [[docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dump"]] UTF8String];
-        const char *decompressed_kernel_cache_path = [[docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dec"]] UTF8String];
-        
-        NSError *error = NULL;
-        removeFile(decompressed_kernel_cache_path);
-        
-        FILE *original_kernel_cache = fopen(original_kernel_cache_path, "rb");
-        uint32_t macho_header_offset = find_macho_header(original_kernel_cache);
-        char *args[5] = { "lzssdec", "-o", (char *)[NSString stringWithFormat:@"0x%x", macho_header_offset].UTF8String, (char *)original_kernel_cache_path, (char *)decompressed_kernel_cache_path};
-        lzssdec(5, args);
-        fclose(original_kernel_cache);
-        chown(decompressed_kernel_cache_path, 501, 501);
-        
-        if (init_kernel(NULL, 0, decompressed_kernel_cache_path) != ERR_SUCCESS) {
-            ERROR("failed to initialize patchfinder");
-            cleanup();
-            return ERROR_SETTING_PATCHFINDER64;
+enum post_exp_t initialize_patchfinder64(bool use_static_kernel) {
+    if(!found_offsets) {
+        static_kernel = use_static_kernel;
+        if(static_kernel) {
+            NSString *docs = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
+            const char *original_kernel_cache_path = [[docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dump"]] UTF8String];
+            const char *decompressed_kernel_cache_path = [[docs stringByAppendingPathComponent:[NSString stringWithFormat:@"kernelcache.dec"]] UTF8String];
+            
+            NSError *error = NULL;
+            removeFile(decompressed_kernel_cache_path);
+            
+            FILE *original_kernel_cache = fopen(original_kernel_cache_path, "rb");
+            FILE *decompressed_kernel_cache = fopen(decompressed_kernel_cache_path, "w+b");
+            decompress_kernel(original_kernel_cache, decompressed_kernel_cache, NULL, true);
+            fclose(decompressed_kernel_cache);
+            chown(decompressed_kernel_cache_path, 501, 501);
+            
+            if (init_kernel(NULL, 0, decompressed_kernel_cache_path) != ERR_SUCCESS) {
+                ERROR("failed to initialize patchfinder");
+                cleanup();
+                return ERROR_SETTING_PATCHFINDER64;
+            } else {
+                INFO("patchfinder initialized successfully");
+#ifdef CLASSIC_FILE_STYLE
+                if(dump_offsets_to_file("/var/containers/Bundle/tweaksupport/offsets.data") != 0) {
+                    ERROR("failed to save offsets");
+                    cleanup();
+                    return ERROR_SAVING_OFFSETS;
+                }
+#else
+                set_cached_offsets(kCFCoreFoundationVersionNumber);
+#endif
+                term_kernel();
+                INFO("offsets dumped correctly and patchfinder terminated");
+            }
         } else {
-            INFO("patchfinder initialized successfully");
-            set_cached_offsets(kCFCoreFoundationVersionNumber);
-            term_kernel();
-            INFO("offsets dumped correctly and patchfinder terminated");
-            return NO_ERROR;
+            if (init_kernel(kread_pf, kernel_load_base, NULL) != ERR_SUCCESS) {
+                ERROR("failed to initialize patchfinder");
+                cleanup();
+                return ERROR_SETTING_PATCHFINDER64;
+            } else {
+                INFO("patchfinder initialized successfully");
+#ifdef CLASSIC_FILE_STYLE
+                if(dump_offsets_to_file("/var/containers/Bundle/tweaksupport/offsets.data") != 0) {
+                    ERROR("failed to save offsets");
+                    cleanup();
+                    return ERROR_SAVING_OFFSETS;
+                }
+#else
+                set_cached_offsets(kCFCoreFoundationVersionNumber);
+#endif
+                term_kernel();
+                INFO("offsets dumped correctly and patchfinder terminated");
+            }
         }
     } else {
-        if (init_kernel(kread, kernel_load_base, NULL) != ERR_SUCCESS) {
-            ERROR("failed to initialize patchfinder");
-            cleanup();
-            return ERROR_SETTING_PATCHFINDER64;
-        } else {
-            INFO("patchfinder initialized successfully");
-            set_cached_offsets(kCFCoreFoundationVersionNumber);
-            term_kernel();
-            INFO("offsets dumped correctly and patchfinder terminated");
-            return NO_ERROR;
-        }
+        auth_ptrs = GETOFFSET(auth_ptrs) == true ? true : false;
+        monolithic_kernel = GETOFFSET(monolithic_kernel) == true ? true : false;
     }
+    return NO_ERROR;
 }
 
 enum post_exp_t set_host_special_port_4_patch(void) {
@@ -208,121 +235,25 @@ enum post_exp_t set_host_special_port_4_patch(void) {
     return NO_ERROR;
 }
 
-enum post_exp_t bootstrap() {
+enum post_exp_t add_to_trustcache(char *trust_path) {
     current_task = task_struct_of_pid(getpid());
-    if(!clean_up_previous()) {
-        cleanup();
-        return ERROR_INSTALLING_BOOTSTRAP;
-    }
-    
-    if(dump_offsets_to_file("/var/containers/Bundle/tweaksupport/offsets.data") != 0) {
-        ERROR("failed to save offsets");
-        cleanup();
-        return ERROR_SAVING_OFFSETS;
-    }
-    
-    prepare_payload();
-    
-    NSError *error = NULL;
-    removeFile("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear");
-    removeFile("/var/containers/Bundle/iosbinpack64/usr/bin/scp");
-    
-    chdir("/var/containers/Bundle/");
-    FILE *fixed_dropbear = fopen(in_bundle("dropbear.v2018.76.tar"), "r");
-    untar(fixed_dropbear, "/var/containers/Bundle/");
-    fclose(fixed_dropbear);
-    INFO("installed Dropbear SSH!");
-    
-    removeFile("/var/containers/Bundle/iosbinpack64/bin/jailbreakd");
-    if (!fileExists(in_bundle("jailbreakd"))) {
-        chdir(in_bundle(""));
-        
-        FILE *jbd = fopen(in_bundle("jailbreakd.tar"), "r");
-        untar(jbd, in_bundle("jailbreakd"));
-        fclose(jbd);
-        
-        removeFile(in_bundle("jailbreakd.tar"));
-    }
-    copyFile(in_bundle("jailbreakd"), "/var/containers/Bundle/iosbinpack64/bin/jailbreakd");
-
     kernel_call_init();
-    trustbin("/var/containers/Bundle/iosbinpack64");
+    trustbin(trust_path);
     kernel_call_deinit();
-    
-    mkdir("/var/dropbear", 0777);
-    removeFile("/var/profile");
-    removeFile("/var/motd");
-    chmod("/var/profile", 0777);
-    chmod("/var/motd", 0777);
-    
-    copyFile("/var/containers/Bundle/iosbinpack64/etc/profile", "/var/profile");
-    copyFile("/var/containers/Bundle/iosbinpack64/etc/motd", "/var/motd");
-    FILE *motd = fopen("/var/motd", "w");
-    struct utsname ut;
-    uname(&ut);
-    fprintf(motd, "A12 dropbear exec by @xavo95\n");
-    fprintf(motd, "%s %s %s %s %s\n", ut.sysname, ut.nodename, ut.release, ut.version, ut.machine);
-    fclose(motd);
-    chmod("/var/motd", 0777);
-    
-    launch("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "-SEGV", "dropbear", NULL, NULL, NULL, NULL, NULL);
-    
-    if(fileExists(in_bundle("dropbear.plist"))) {
-        removeFile("/var/containers/Bundle/iosbinpack64/LaunchDaemons/dropbear.plist");
-        copyFile(in_bundle("dropbear.plist"), "/var/containers/Bundle/iosbinpack64/LaunchDaemons/dropbear.plist");
-    }
-    if(fileExists(in_bundle("jailbreakd.plist"))) {
-        removeFile("/var/containers/Bundle/iosbinpack64/LaunchDaemons/jailbreakd.plist");
-        copyFile(in_bundle("jailbreakd.plist"), "/var/containers/Bundle/iosbinpack64/LaunchDaemons/jailbreakd.plist");
-    }
-    //------------- launch daeamons -------------//
-    //-- you can drop any daemon plist in iosbinpack64/LaunchDaemons and it will be loaded automatically --//
-    NSArray *plists = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:@"/var/containers/Bundle/iosbinpack64/LaunchDaemons" error:nil];
-    
-    for (__strong NSString *file in plists) {
-        INFO("adding permissions to plist %s", [file UTF8String]);
-        
-        file = [@"/var/containers/Bundle/iosbinpack64/LaunchDaemons" stringByAppendingPathComponent:file];
-        
-        if (strstr([file UTF8String], "jailbreakd")) {
-            INFO("found jailbreakd plist, special handling");
-            
-            NSMutableDictionary *job = [NSPropertyListSerialization propertyListWithData:[NSData dataWithContentsOfFile:file] options:NSPropertyListMutableContainers format:nil error:nil];
-            
-            job[@"EnvironmentVariables"][@"KernelBase"] = [NSString stringWithFormat:@"0x%16llx", kernel_load_base];
-            [job writeToFile:file atomically:YES];
-        }
-        
-        chmod([file UTF8String], 0644);
-        chown([file UTF8String], 0, 0);
-    }
-    
-    // clean up
-    removeFile("/var/log/testbin.log");
-    removeFile("/var/log/jailbreakd-stderr.log");
-    removeFile("/var/log/jailbreakd-stdout.log");
-    
-    launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "unload", "/var/containers/Bundle/iosbinpack64/LaunchDaemons", NULL, NULL, NULL, NULL, NULL);
-    launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "load", "/var/containers/Bundle/iosbinpack64/LaunchDaemons", NULL, NULL, NULL, NULL, NULL);
-    
-    sleep(1);
-    
-    if(!fileExists("/var/log/testbin.log")) {
-        ERROR("failed to load launch daemons");
-        cleanup();
-        return ERROR_LOADING_LAUNCHDAEMONS;
-    }
-    if(!fileExists("/var/log/jailbreakd-stdout.log")) {
-        ERROR("failed to load jailbreakd");
-        cleanup();
-        return ERROR_LOADING_JAILBREAKD;
-    }
     return NO_ERROR;
+}
+
+void extract_tar(FILE *a, const char *path) {
+    untar(a, path);
+}
+
+int launch_binary(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
+    return launch(binary, arg1, arg2, arg3, arg4, arg5, arg6, env);
 }
 
 void cleanup(void) {
     INFO("cleaning up");
-    if (verify_tfp0() && cached_offsets.allproc && !current_task) {
+    if (verify_tfp0() && GETOFFSET(allproc) && !current_task) {
         current_task = task_struct_of_pid(getpid());
     }
     restore_csflags(current_task);

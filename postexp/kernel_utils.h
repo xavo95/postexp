@@ -15,38 +15,6 @@
 #include <mach/mach.h>
 
 /*
- * kernel_base
- *
- * Description:
- *     The static kernel base.
- */
-uint64_t kernel_base = 0xFFFFFFF007004000;
-
-/*
- * static_kernel
- *
- * Description:
- *     If kernel analyzed by patchfinder is static or not.
- */
-extern bool static_kernel;
-
-/*
- * kernel_slide
- *
- * Description:
- *     The kASLR slide.
- */
-extern uint64_t kernel_slide;
-
-/*
- * kernel_load_base
- *
- * Description:
- *     The slided kernel address.
- */
-uint64_t kernel_load_base;
-
-/*
  * task_self_addr
  *
  * Description:
@@ -156,7 +124,7 @@ bool verify_tfp0(void);
  * Description:
  *     Finds the kernel base.
  */
-uint64_t find_kernel_base();
+uint64_t find_kernel_base(void);
 
 /*
  * get_address_of_port

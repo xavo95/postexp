@@ -170,7 +170,7 @@ void inject_trusts(int pathc, NSMutableArray *paths) {
     
     static uint64_t tc = 0;
     if (tc == 0) {
-        tc = cached_offsets.trustcache;
+        tc = GETOFFSET(trustcache);
     }
     
     INFO("trust cache: 0x%llx", tc);
@@ -210,7 +210,7 @@ void inject_trusts(int pathc, NSMutableArray *paths) {
     
 #if __arm64e__
     uint64_t f_load_trust_cache = 0;
-    f_load_trust_cache = cached_offsets.f_load_trust_cache;
+    f_load_trust_cache = GETOFFSET(f_load_trust_cache);
     uint32_t ret = kernel_call_7(f_load_trust_cache, 3,
                                  kernel_trust,
                                  length,

@@ -98,5 +98,7 @@ extern unsigned off_mnt_data;
 #define CS_SIGNED         0x20000000  /* process has a signature (may have gone invalid) */
 #define CS_DEV_CODE         0x40000000  /* code is dev signed, cannot be loaded into prod signed code (will go away with rdar://problem/28322552) */
 
+#define TF_PLATFORM         0x00000400
+#define TF_PLATFORM_CS_PATCH        0x24004001u
 
 #endif /* offsetof_h */

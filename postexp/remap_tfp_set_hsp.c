@@ -32,6 +32,8 @@ uint64_t make_fake_task(uint64_t vm_map) {
     return fake_task_kaddr;
 }
 
+#ifdef CLASSIC_FILE_STYLE
+
 void set_all_image_info_addr(uint64_t kernel_task_kaddr, uint64_t all_image_info_addr) {
     struct task_dyld_info dyld_info = { 0 };
     mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
@@ -49,6 +51,41 @@ void set_all_image_info_addr(uint64_t kernel_task_kaddr, uint64_t all_image_info
     }
 }
 
+#else
+
+void set_all_image_info_addr(uint64_t kernel_task_kaddr) {
+    struct task_dyld_info dyld_info = { 0 };
+    mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+    if(task_info(kernel_task_port, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
+        INFO("Will save offsets to all_image_info_addr");
+        if (dyld_info.all_image_info_addr && dyld_info.all_image_info_addr != kernel_load_base && dyld_info.all_image_info_addr > kernel_load_base) {
+            size_t blob_size = kernel_read64(dyld_info.all_image_info_addr);
+            struct cache_blob *blob = create_cache_blob(blob_size);
+            kernel_read(dyld_info.all_image_info_addr, blob, blob_size);
+            // Adds any entries that are in kernel but we don't have
+            merge_cache_blob(blob);
+            free(blob);
+            // Free old offset cache - didn't bother comparing because it's faster to just replace it if it's the same
+            kfree(dyld_info.all_image_info_addr, kernel_read64(kernel_read64(dyld_info.all_image_info_addr)));
+        }
+        struct cache_blob *cache;
+        size_t cache_size = export_cache_blob(&cache);
+        INFO("Setting all_image_info_addr...");
+        SETOFFSET(kernel_base, kernel_load_base);
+        SETOFFSET(kernel_slide, kernel_slide);
+        uint64_t kernel_cache_blob = kernel_alloc_wired(cache_size);
+        blob_rebase(cache, (uint64_t)cache, kernel_cache_blob);
+        kernel_write(kernel_cache_blob, cache, cache_size);
+        free(cache);
+        kernel_write64(kernel_task_kaddr + _koffset(KSTRUCT_OFFSET_TASK_ALL_IMAGE_INFO_ADDR), kernel_cache_blob);
+        //        TODO: add this assertions
+        //        _assert(task_info(tfp0, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS, message, true);
+        //        _assert(dyld_info.all_image_info_addr == kernel_cache_blob, message, true);
+    }
+}
+
+#endif
+
 void set_all_image_info_size(uint64_t kernel_task_kaddr, uint64_t all_image_info_size) {
     struct task_dyld_info dyld_info = { 0 };
     mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
@@ -57,9 +94,9 @@ void set_all_image_info_size(uint64_t kernel_task_kaddr, uint64_t all_image_info
         if (dyld_info.all_image_info_size != all_image_info_size) {
             INFO("Setting all_image_info_size...");
             kernel_write64(kernel_task_kaddr + _koffset(KSTRUCT_OFFSET_TASK_ALL_IMAGE_INFO_SIZE), all_image_info_size);
-            //        TODO: add this assertions
-            //        task_info(tfp0, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS
-            //        dyld_info.all_image_info_size == all_image_info_size
+//          TODO: add this assertions
+//          task_info(tfp0, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS
+//          dyld_info.all_image_info_size == all_image_info_size
         } else {
             INFO("All_image_info_size already set.");
         }
@@ -138,7 +175,7 @@ int setHSP4() {
     
     // strref \"Nothing being freed to the zone_map. start = end = %p\\n\"
     // or traditional \"zone_init: kmem_suballoc failed\"
-    uint64_t zone_map_kptr = cached_offsets.zone_map_ref;
+    uint64_t zone_map_kptr = GETOFFSET(zone_map_ref);
     uint64_t zone_map = kernel_read64(zone_map_kptr);
     
     // kernel_task->vm_map == kernel_map
@@ -199,7 +236,11 @@ int setHSP4() {
     uint64_t host_priv_kaddr = find_port_address(mach_host_self());
     uint64_t realhost_kaddr = kernel_read64(host_priv_kaddr + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT));
     kernel_write64(realhost_kaddr + off_host_special + 4 * sizeof(void*), port_kaddr);
+#ifdef CLASSIC_FILE_STYLE
     set_all_image_info_addr(kernel_task_kaddr, kernel_base);
+#else
+    set_all_image_info_addr(kernel_task_kaddr);
+#endif
     set_all_image_info_size(kernel_task_kaddr, kernel_slide);
     
     return 0;

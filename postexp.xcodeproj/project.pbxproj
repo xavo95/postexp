@@ -16,13 +16,11 @@
 		917487B722372536008601C7 /* macho-helper.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879922372535008601C7 /* macho-helper.c */; };
 		917487B822372536008601C7 /* amfi_utils.m in Sources */ = {isa = PBXBuildFile; fileRef = 9174879A22372535008601C7 /* amfi_utils.m */; };
 		917487B922372536008601C7 /* kernel_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879B22372535008601C7 /* kernel_utils.c */; };
-		917487BA22372536008601C7 /* payload.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879D22372535008601C7 /* payload.c */; };
 		917487BB22372536008601C7 /* offsets.m in Sources */ = {isa = PBXBuildFile; fileRef = 917487A022372535008601C7 /* offsets.m */; };
 		917487BC22372536008601C7 /* sandbox.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487A222372535008601C7 /* sandbox.c */; };
 		917487BD22372536008601C7 /* post-common.m in Sources */ = {isa = PBXBuildFile; fileRef = 917487A322372535008601C7 /* post-common.m */; };
 		917487BE22372536008601C7 /* launch_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487A622372535008601C7 /* launch_utils.c */; };
 		917487BF22372536008601C7 /* root.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487A722372535008601C7 /* root.c */; };
-		917487C022372536008601C7 /* lzssdec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 917487A822372535008601C7 /* lzssdec.cpp */; };
 		917487C122372536008601C7 /* kmem.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487AA22372536008601C7 /* kmem.c */; };
 		917487C222372536008601C7 /* offsetof.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487B222372536008601C7 /* offsetof.c */; };
 		917487C922384C67008601C7 /* patchfinder64.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487C822384C67008601C7 /* patchfinder64.c */; };
@@ -32,7 +30,9 @@
 		917487E322385429008601C7 /* pac.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487D822385429008601C7 /* pac.c */; };
 		917487E622386C09008601C7 /* platform_match.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487E422386C09008601C7 /* platform_match.c */; };
 		917487E922386C66008601C7 /* platform.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487E722386C66008601C7 /* platform.c */; };
-		91748820223993EA008601C7 /* utils.m in Sources */ = {isa = PBXBuildFile; fileRef = 9174881F223993EA008601C7 /* utils.m */; };
+		91748831224E0C44008601C7 /* offsetcache.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174882D224E0C44008601C7 /* offsetcache.c */; };
+		917488432253F7AF008601C7 /* lzssdec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 917488402253F7AF008601C7 /* lzssdec.cpp */; };
+		917488442253F7AF008601C7 /* kerneldec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 917488412253F7AF008601C7 /* kerneldec.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -61,8 +61,6 @@
 		9174879922372535008601C7 /* macho-helper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "macho-helper.c"; sourceTree = "<group>"; };
 		9174879A22372535008601C7 /* amfi_utils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = amfi_utils.m; sourceTree = "<group>"; };
 		9174879B22372535008601C7 /* kernel_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = kernel_utils.c; sourceTree = "<group>"; };
-		9174879C22372535008601C7 /* payload.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = payload.h; sourceTree = "<group>"; };
-		9174879D22372535008601C7 /* payload.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = payload.c; sourceTree = "<group>"; };
 		9174879E22372535008601C7 /* kernel_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = kernel_utils.h; sourceTree = "<group>"; };
 		9174879F22372535008601C7 /* macho-helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "macho-helper.h"; sourceTree = "<group>"; };
 		917487A022372535008601C7 /* offsets.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = offsets.m; sourceTree = "<group>"; };
@@ -73,13 +71,11 @@
 		917487A522372535008601C7 /* offsetof.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = offsetof.h; sourceTree = "<group>"; };
 		917487A622372535008601C7 /* launch_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = launch_utils.c; sourceTree = "<group>"; };
 		917487A722372535008601C7 /* root.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = root.c; sourceTree = "<group>"; };
-		917487A822372535008601C7 /* lzssdec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lzssdec.cpp; sourceTree = "<group>"; };
 		917487A922372536008601C7 /* post-common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "post-common.h"; sourceTree = "<group>"; };
 		917487AA22372536008601C7 /* kmem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = kmem.c; sourceTree = "<group>"; };
 		917487AB22372536008601C7 /* amfi_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = amfi_utils.h; sourceTree = "<group>"; };
 		917487AC22372536008601C7 /* untar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = untar.h; sourceTree = "<group>"; };
 		917487AD22372536008601C7 /* root.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = root.h; sourceTree = "<group>"; };
-		917487AE22372536008601C7 /* lzssdec.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = lzssdec.hpp; sourceTree = "<group>"; };
 		917487AF22372536008601C7 /* log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = "<group>"; };
 		917487B022372536008601C7 /* offsets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = offsets.h; sourceTree = "<group>"; };
 		917487B122372536008601C7 /* sandbox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sandbox.h; sourceTree = "<group>"; };
@@ -101,9 +97,13 @@
 		917487E522386C09008601C7 /* platform_match.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = platform_match.h; sourceTree = "<group>"; };
 		917487E722386C66008601C7 /* platform.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = platform.c; sourceTree = "<group>"; };
 		917487E822386C66008601C7 /* platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = platform.h; sourceTree = "<group>"; };
-		9174881E223993EA008601C7 /* utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
-		9174881F223993EA008601C7 /* utils.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = utils.m; sourceTree = "<group>"; };
 		917488232242D795008601C7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
+		9174882D224E0C44008601C7 /* offsetcache.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = offsetcache.c; sourceTree = "<group>"; };
+		9174882F224E0C44008601C7 /* offsetcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = offsetcache.h; sourceTree = "<group>"; };
+		9174883F2253F7AF008601C7 /* lzssdec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lzssdec.h; sourceTree = "<group>"; };
+		917488402253F7AF008601C7 /* lzssdec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lzssdec.cpp; sourceTree = "<group>"; };
+		917488412253F7AF008601C7 /* kerneldec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kerneldec.cpp; sourceTree = "<group>"; };
+		917488422253F7AF008601C7 /* kerneldec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = kerneldec.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +123,7 @@
 				917487CA22384DB4008601C7 /* include */,
 				917487892237236E008601C7 /* postexp */,
 				917487C622384C46008601C7 /* patchfinder64 */,
+				9174882A224E0C44008601C7 /* offset-cache */,
 				917487882237236E008601C7 /* Products */,
 				917488222242D795008601C7 /* Frameworks */,
 			);
@@ -139,52 +140,37 @@
 		917487892237236E008601C7 /* postexp */ = {
 			isa = PBXGroup;
 			children = (
+				917488452253FF7F008601C7 /* kernel_call */,
 				9174878A2237236E008601C7 /* postexp.h */,
 				9174878B2237236E008601C7 /* postexp.m */,
 				917487AB22372536008601C7 /* amfi_utils.h */,
 				9174879A22372535008601C7 /* amfi_utils.m */,
-				9174879522372535008601C7 /* offsets_dump.c */,
-				9174879322372534008601C7 /* offsets_dump.h */,
 				917487A922372536008601C7 /* post-common.h */,
 				917487A322372535008601C7 /* post-common.m */,
 				9174879822372535008601C7 /* remap_tfp_set_hsp.c */,
 				917487A422372535008601C7 /* remap_tfp_set_hsp.h */,
-				9174881E223993EA008601C7 /* utils.h */,
-				9174881F223993EA008601C7 /* utils.m */,
 				9174879B22372535008601C7 /* kernel_utils.c */,
 				9174879E22372535008601C7 /* kernel_utils.h */,
+				9174879522372535008601C7 /* offsets_dump.c */,
+				9174879322372534008601C7 /* offsets_dump.h */,
 				917487AA22372536008601C7 /* kmem.c */,
 				917487A122372535008601C7 /* kmem.h */,
 				917487A722372535008601C7 /* root.c */,
 				917487AD22372536008601C7 /* root.h */,
 				917487A222372535008601C7 /* sandbox.c */,
 				917487B122372536008601C7 /* sandbox.h */,
-				9174879D22372535008601C7 /* payload.c */,
-				9174879C22372535008601C7 /* payload.h */,
 				917487B022372536008601C7 /* offsets.h */,
 				917487A022372535008601C7 /* offsets.m */,
 				917487B222372536008601C7 /* offsetof.c */,
 				917487A522372535008601C7 /* offsetof.h */,
-				917487D822385429008601C7 /* pac.c */,
-				917487D022385429008601C7 /* pac.h */,
-				917487D322385429008601C7 /* user_client.c */,
-				917487D922385429008601C7 /* user_client.h */,
-				917487D422385429008601C7 /* kc_parameters.c */,
-				917487DA22385429008601C7 /* kc_parameters.h */,
 				917487CE22385429008601C7 /* kernel_call.c */,
 				917487DC22385429008601C7 /* kernel_call.h */,
 				917487A622372535008601C7 /* launch_utils.c */,
 				9174879722372535008601C7 /* launch_utils.h */,
 				9174879922372535008601C7 /* macho-helper.c */,
 				9174879F22372535008601C7 /* macho-helper.h */,
-				917487A822372535008601C7 /* lzssdec.cpp */,
-				917487AE22372536008601C7 /* lzssdec.hpp */,
 				9174879422372534008601C7 /* untar.c */,
 				917487AC22372536008601C7 /* untar.h */,
-				917487E422386C09008601C7 /* platform_match.c */,
-				917487E522386C09008601C7 /* platform_match.h */,
-				917487E722386C66008601C7 /* platform.c */,
-				917487E822386C66008601C7 /* platform.h */,
 				9174879622372535008601C7 /* log.c */,
 				917487AF22372536008601C7 /* log.h */,
 			);
@@ -194,6 +180,7 @@
 		917487C622384C46008601C7 /* patchfinder64 */ = {
 			isa = PBXGroup;
 			children = (
+				9174883E2253F776008601C7 /* kerneldec */,
 				917487C822384C67008601C7 /* patchfinder64.c */,
 				917487C722384C67008601C7 /* patchfinder64.h */,
 			);
@@ -216,6 +203,43 @@
 				917488232242D795008601C7 /* libc++.tbd */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		9174882A224E0C44008601C7 /* offset-cache */ = {
+			isa = PBXGroup;
+			children = (
+				9174882D224E0C44008601C7 /* offsetcache.c */,
+				9174882F224E0C44008601C7 /* offsetcache.h */,
+			);
+			path = "offset-cache";
+			sourceTree = "<group>";
+		};
+		9174883E2253F776008601C7 /* kerneldec */ = {
+			isa = PBXGroup;
+			children = (
+				917488412253F7AF008601C7 /* kerneldec.cpp */,
+				917488422253F7AF008601C7 /* kerneldec.h */,
+				917488402253F7AF008601C7 /* lzssdec.cpp */,
+				9174883F2253F7AF008601C7 /* lzssdec.h */,
+			);
+			path = kerneldec;
+			sourceTree = "<group>";
+		};
+		917488452253FF7F008601C7 /* kernel_call */ = {
+			isa = PBXGroup;
+			children = (
+				917487D822385429008601C7 /* pac.c */,
+				917487D022385429008601C7 /* pac.h */,
+				917487D322385429008601C7 /* user_client.c */,
+				917487D922385429008601C7 /* user_client.h */,
+				917487D422385429008601C7 /* kc_parameters.c */,
+				917487DA22385429008601C7 /* kc_parameters.h */,
+				917487E422386C09008601C7 /* platform_match.c */,
+				917487E522386C09008601C7 /* platform_match.h */,
+				917487E722386C66008601C7 /* platform.c */,
+				917487E822386C66008601C7 /* platform.h */,
+			);
+			path = kernel_call;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -281,20 +305,20 @@
 				917487BD22372536008601C7 /* post-common.m in Sources */,
 				917487C122372536008601C7 /* kmem.c in Sources */,
 				917487B922372536008601C7 /* kernel_utils.c in Sources */,
+				917488442253F7AF008601C7 /* kerneldec.cpp in Sources */,
 				917487BE22372536008601C7 /* launch_utils.c in Sources */,
 				917487E922386C66008601C7 /* platform.c in Sources */,
-				917487C022372536008601C7 /* lzssdec.cpp in Sources */,
 				917487B522372536008601C7 /* log.c in Sources */,
 				917487B422372536008601C7 /* offsets_dump.c in Sources */,
 				917487B822372536008601C7 /* amfi_utils.m in Sources */,
+				917488432253F7AF008601C7 /* lzssdec.cpp in Sources */,
 				917487DD22385429008601C7 /* kernel_call.c in Sources */,
 				917487B722372536008601C7 /* macho-helper.c in Sources */,
+				91748831224E0C44008601C7 /* offsetcache.c in Sources */,
 				917487E322385429008601C7 /* pac.c in Sources */,
 				917487E122385429008601C7 /* kc_parameters.c in Sources */,
-				917487BA22372536008601C7 /* payload.c in Sources */,
 				917487BF22372536008601C7 /* root.c in Sources */,
 				917487E022385429008601C7 /* user_client.c in Sources */,
-				91748820223993EA008601C7 /* utils.m in Sources */,
 				917487B322372536008601C7 /* untar.c in Sources */,
 				917487BC22372536008601C7 /* sandbox.c in Sources */,
 				917487B622372536008601C7 /* remap_tfp_set_hsp.c in Sources */,
@@ -445,6 +469,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/patchfinder64",
 					"$(SRCROOT)/include",
+					"$(SRCROOT)/offset-cache",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -471,6 +496,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/patchfinder64",
 					"$(SRCROOT)/include",
+					"$(SRCROOT)/offset-cache",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",

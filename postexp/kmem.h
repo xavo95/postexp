@@ -15,6 +15,38 @@
 #endif
 
 /*
+ * kernel_base
+ *
+ * Description:
+ *     The static kernel base.
+ */
+uint64_t static_kernel_base = 0xFFFFFFF007004000;
+
+/*
+ * static_kernel
+ *
+ * Description:
+ *     If kernel analyzed by patchfinder is static or not.
+ */
+bool static_kernel;
+
+/*
+ * kernel_slide
+ *
+ * Description:
+ *     The kASLR slide.
+ */
+extern uint64_t kernel_slide;
+
+/*
+ * kernel_load_base
+ *
+ * Description:
+ *     The slided kernel address.
+ */
+uint64_t kernel_load_base;
+
+/*
  * kernel_task_port
  *
  * Description:
@@ -111,12 +143,36 @@ bool kernel_write32(uint64_t address, uint32_t value);
 bool kernel_write64(uint64_t address, uint64_t value);
 
 /*
+ * kalloc
+ *
+ * Description:
+ *     Allocate data to kernel memory.
+ */
+uint64_t kalloc(vm_size_t size);
+
+/*
+ * kfree
+ *
+ * Description:
+ *     Free data from kernel memory.
+ */
+bool kfree(mach_vm_address_t address, vm_size_t size);
+
+/*
  * kread
  *
  * Description:
- *     Read data from kernel memory.
+ *     Reads data from kernel memory.
  */
 size_t kread(uint64_t where, void *p, size_t size);
+
+/*
+ * kread_pf
+ *
+ * Description:
+ *     Reads data from kernel memory in chuck(for huge amount of memory).
+ */
+size_t kread_pf(uint64_t where, void *p, size_t size);
 
 #undef extern
 

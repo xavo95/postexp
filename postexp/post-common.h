@@ -14,6 +14,14 @@
 #include <mach/mach.h>
 
 /*
+ * kernel_get_task_for_pid
+ *
+ * Description:
+ *     Get the task struct for a pid.
+ */
+uint64_t kernel_get_task_for_pid(pid_t pid);
+
+/*
  * kernel_get_proc_for_task
  *
  * Description:
@@ -36,30 +44,6 @@ uint64_t kernel_get_ucred_for_task(uint64_t task);
  *     Get the cr_label struct for a task.
  */
 uint64_t kernel_get_cr_label_for_task(uint64_t task);
-
-/*
- * kalloc
- *
- * Description:
- *     Allocate data to kernel memory.
- */
-uint64_t kalloc(vm_size_t size);
-
-/*
- * kfree
- *
- * Description:
- *     Free data from kernel memory.
- */
-bool kfree(mach_vm_address_t address, vm_size_t size);
-
-/*
- * kread
- *
- * Description:
- *     Reads data from kernel memory.
- */
-size_t kread(uint64_t where, void *p, size_t size);
 
 /*
  * entitle_pid

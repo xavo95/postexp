@@ -17,6 +17,12 @@
 #include "mach_vm.h"
 #include "log.h"
 #include "amfi_utils.h"
+#include "kernel_utils.h"
+
+uint64_t kernel_get_task_for_pid(pid_t pid) {
+    uint64_t proc = proc_of_pid(pid);
+    return kernel_read64(proc + off_task);
+}
 
 uint64_t kernel_get_proc_for_task(uint64_t task) {
     return kernel_read64(task + _koffset(KSTRUCT_OFFSET_TASK_BSD_INFO));
@@ -30,32 +36,6 @@ uint64_t kernel_get_ucred_for_task(uint64_t task) {
 uint64_t kernel_get_cr_label_for_task(uint64_t task) {
     uint64_t ucred = kernel_get_ucred_for_task(task);
     return kernel_read64(ucred + off_ucred_cr_label);
-}
-
-uint64_t kalloc(vm_size_t size) {
-    mach_vm_address_t address = 0;
-    mach_vm_allocate(kernel_task_port, (mach_vm_address_t *)&address, size, VM_FLAGS_ANYWHERE);
-    return address;
-}
-
-bool kfree(mach_vm_address_t address, vm_size_t size) {
-    kern_return_t kr = mach_vm_deallocate(kernel_task_port, address, size);
-    if (kr != KERN_SUCCESS) {
-        return false;
-    }
-    return true;
-}
-
-size_t kread(uint64_t address, void *data, size_t size) {
-    mach_vm_size_t size_out;
-    kern_return_t kr = mach_vm_read_overwrite(kernel_task_port, address,
-                                              size, (mach_vm_address_t) data, &size_out);
-    if (kr != KERN_SUCCESS) {
-        ERROR("%s returned %d: %s", "mach_vm_read_overwrite", kr, mach_error_string(kr));
-        ERROR("could not %s address 0x%016llx", "read", address);
-        return -1;
-    }
-    return size_out;
 }
 
 bool entitle_pid(uint64_t task, const char *ent, bool val) {
