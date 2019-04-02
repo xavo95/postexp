@@ -243,6 +243,23 @@ enum post_exp_t add_to_trustcache(char *trust_path) {
     return NO_ERROR;
 }
 
+enum post_exp_t dump_apticker(void) {
+    NSString *apticket = @"/System/Library/Caches/apticket.der";
+    NSString *docs = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
+    mkdir((char *)[docs UTF8String], 0777);
+    
+    NSString *location = [docs stringByAppendingPathComponent:[NSString stringWithFormat:@"apticket.der"]];
+    NSError *error = NULL;
+    
+    removeFile([location UTF8String]);
+    NSData *fileData = [NSData dataWithContentsOfFile:apticket];
+    [fileData writeToFile:location atomically:YES];
+    INFO("APTicket dumped");
+    
+    chown([location UTF8String], 501, 501);
+    return NO_ERROR;
+}
+
 void extract_tar(FILE *a, const char *path) {
     untar(a, path);
 }
