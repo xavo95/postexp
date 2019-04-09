@@ -99,30 +99,27 @@ void set_cached_offsets(double kCFCoreFoundationVersionNumber) {
     SETOFFSET(OSUnserializeXML, slide_addr(find_osunserializexml()));
     SETOFFSET(smalloc, slide_addr(find_smalloc()));
     SETOFFSET(zone_map_ref, slide_addr(find_zone_map_ref()));
-    ///////////////////// TODO: SLIDE OR NOT ?? /////////////////////
     
     uint64_t vfscontext = slide_addr(find_symbol("_vfs_context_current"));
     if(!vfscontext || vfscontext == kernel_slide) {
-        SETOFFSET(vfs_context, find_vfs_context_current());
+        SETOFFSET(vfs_context, slide_addr(find_vfs_context_current()));
     } else {
         SETOFFSET(vfs_context, vfscontext);
     }
     
     uint64_t vfslookup = slide_addr(find_symbol("_vnode_lookup"));
     if(!vfslookup || vfslookup == kernel_slide) {
-        SETOFFSET(vnode_lookup, find_vnode_lookup());
+        SETOFFSET(vnode_lookup, slide_addr(find_vnode_lookup()));
     } else {
         SETOFFSET(vnode_lookup, vfslookup);
     }
     
     uint64_t vnodeput = slide_addr(find_symbol("_vnode_put"));
     if(!vnodeput || vnodeput == kernel_slide) {
-        SETOFFSET(vnode_put, find_vfs_context_current());
+        SETOFFSET(vnode_put, slide_addr(find_vfs_context_current()));
     } else {
         SETOFFSET(vnode_put, vnodeput);
     }
-    
-    ///////////////////// TODO: SLIDE OR NOT ?? /////////////////////
     SETOFFSET(kernel_task, slide_addr(find_kernel_task()));
     SETOFFSET(shenanigans, slide_addr(find_shenanigans()));
     SETOFFSET(lck_mtx_lock, slide_addr(find_lck_mtx_lock()));

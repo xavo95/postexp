@@ -66,7 +66,7 @@ void set_all_image_info_addr(uint64_t kernel_task_kaddr) {
             merge_cache_blob(blob);
             free(blob);
             // Free old offset cache - didn't bother comparing because it's faster to just replace it if it's the same
-            kfree(dyld_info.all_image_info_addr, kernel_read64(kernel_read64(dyld_info.all_image_info_addr)));
+            kfree(dyld_info.all_image_info_addr, blob_size);
         }
         struct cache_blob *cache;
         size_t cache_size = export_cache_blob(&cache);

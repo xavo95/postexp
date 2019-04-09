@@ -63,7 +63,7 @@ enum post_exp_t recover_with_hsp4(mach_port_t tfp0, uint64_t *ext_kernel_slide, 
     struct task_dyld_info dyld_info = { 0 };
     mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
     if((host_get_special_port(mach_host_self(), HOST_LOCAL_NODE, 4, &tfp0) == KERN_SUCCESS) && MACH_PORT_VALID(tfp0)) {
-        if(task_info(kernel_task_port, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
+        if(task_info(tfp0, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
             kernel_task_port = tfp0;
             kernel_slide = dyld_info.all_image_info_size;
             size_t blob_size = kernel_read64(dyld_info.all_image_info_addr);
