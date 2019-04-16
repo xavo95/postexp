@@ -59,17 +59,19 @@ ERROR("error moving item %s to path %s (%s)", copyFrom, moveTo, [[error localize
 const char *kernel_path = "/System/Library/Caches/com.apple.kernelcaches/kernelcache";
 bool found_offsets = false;
 
-enum post_exp_t recover_with_hsp4(mach_port_t tfp0, uint64_t *ext_kernel_slide, uint64_t *ext_kernel_load_base) {
+enum post_exp_t recover_with_hsp4(mach_port_t *tfp0, uint64_t *ext_kernel_slide, uint64_t *ext_kernel_load_base) {
     struct task_dyld_info dyld_info = { 0 };
     mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
-    if((host_get_special_port(mach_host_self(), HOST_LOCAL_NODE, 4, &tfp0) == KERN_SUCCESS) && MACH_PORT_VALID(tfp0)) {
-        if(task_info(tfp0, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
-            kernel_task_port = tfp0;
+    mach_port_t tfpzero = 0;
+    kern_return_t kr = host_get_special_port(mach_host_self(), HOST_LOCAL_NODE, 4, &tfpzero);
+    if((kr == KERN_SUCCESS) && MACH_PORT_VALID(tfpzero)) {
+        if(task_info(tfpzero, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
+            kernel_task_port = tfpzero;
             kernel_slide = dyld_info.all_image_info_size;
-            size_t blob_size = kernel_read64(dyld_info.all_image_info_addr);
+            size_t blob_size = kernel_read64_internal(dyld_info.all_image_info_addr);
             INFO("Restoring persisted offsets cache");
             struct cache_blob *blob = create_cache_blob(blob_size);
-            if(kernel_read(dyld_info.all_image_info_addr, blob, blob_size)) {
+            if(kernel_read_internal(dyld_info.all_image_info_addr, blob, blob_size)) {
                 import_cache_blob(blob);
                 free(blob);
                 kernel_slide = GETOFFSET(kernel_slide);
@@ -78,6 +80,8 @@ enum post_exp_t recover_with_hsp4(mach_port_t tfp0, uint64_t *ext_kernel_slide, 
             }
             *ext_kernel_slide = kernel_slide;
             *ext_kernel_load_base = kernel_load_base;
+            *tfp0 = tfpzero;
+            _offsets_init();
             return NO_ERROR;
         }
     }
@@ -107,7 +111,7 @@ enum post_exp_t init(mach_port_t tfp0, uint64_t *ext_kernel_slide, uint64_t *ext
         *ext_kernel_load_base = kernel_load_base;
     }
     
-    if (!verify_tfp0()) {
+    if (!verify_tfp0_internal()) {
         ERROR("Failed to verify TFP0.");
         return ERROR_INITIALAZING_LIBRARY;
     }
@@ -116,7 +120,7 @@ enum post_exp_t init(mach_port_t tfp0, uint64_t *ext_kernel_slide, uint64_t *ext
 }
 
 enum post_exp_t root_pid(pid_t pid) {
-    uint64_t task_struct = task_struct_of_pid(pid);
+    uint64_t task_struct = task_struct_of_pid_internal(pid);
     // Get r00t
     save_proc_user_struct(task_struct);
     INFO("current UID: %d", getuid());
@@ -133,7 +137,7 @@ enum post_exp_t root_pid(pid_t pid) {
 }
 
 enum post_exp_t unsandbox_pid(pid_t pid) {
-    uint64_t task_struct = task_struct_of_pid(pid);
+    uint64_t task_struct = task_struct_of_pid_internal(pid);
     // Unsandbox
     save_proc_sandbox_struct(task_struct);
     unsandbox(task_struct);
@@ -236,10 +240,10 @@ enum post_exp_t set_host_special_port_4_patch(void) {
 }
 
 enum post_exp_t add_to_trustcache(char *trust_path) {
-    current_task = task_struct_of_pid(getpid());
-    kernel_call_init();
+    current_task = task_struct_of_pid_internal(getpid());
+    kernel_call_init_internal();
     trustbin(trust_path);
-    kernel_call_deinit();
+    kernel_call_deinit_internal();
     return NO_ERROR;
 }
 
@@ -260,20 +264,110 @@ enum post_exp_t dump_apticker(void) {
     return NO_ERROR;
 }
 
-void extract_tar(FILE *a, const char *path) {
-    untar(a, path);
-}
-
-int launch_binary(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
-    return launch(binary, arg1, arg2, arg3, arg4, arg5, arg6, env);
-}
-
 void cleanup(void) {
     INFO("cleaning up");
-    if (verify_tfp0() && GETOFFSET(allproc) && !current_task) {
-        current_task = task_struct_of_pid(getpid());
+    if (verify_tfp0_internal() && GETOFFSET(allproc) && !current_task) {
+        current_task = task_struct_of_pid_internal(getpid());
     }
     restore_csflags(current_task);
     sandbox(current_task);
     unroot(current_task);
+}
+
+///////////////////////////////////////////// ADVANCED EXPORT METHODS /////////////////////////////////////////////
+
+void untar(FILE *a, const char *path) {
+    untar_internal(a, path);
+}
+
+int launch(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
+    return launch_internal(binary, arg1, arg2, arg3, arg4, arg5, arg6, env);
+}
+
+int launch_as_platform(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
+    return launch_as_platform_internal(binary, arg1, arg2, arg3, arg4, arg5, arg6, env);
+}
+
+bool kernel_call_init(void) {
+    return kernel_call_init_internal();
+}
+
+void kernel_call_deinit(void) {
+    return kernel_call_deinit_internal();
+}
+
+uint32_t kernel_call_7(uint64_t function, size_t argument_count, ...) {
+    assert(argument_count <= 7);
+    uint64_t arguments[7];
+    va_list ap;
+    va_start(ap, argument_count);
+    for (size_t i = 0; i < argument_count && i < 7; i++) {
+        arguments[i] = va_arg(ap, uint64_t);
+    }
+    va_end(ap);
+    return kernel_call_7v(function, argument_count, arguments);
+}
+
+bool kernel_read(uint64_t address, void *data, size_t size) {
+    return kernel_read_internal(address, data, size);
+}
+
+bool kernel_write(uint64_t address, const void *data, size_t size) {
+    return kernel_write_internal(address, data, size);
+}
+
+uint8_t kernel_read8(uint64_t address) {
+    return kernel_read8_internal(address);
+}
+
+uint16_t kernel_read16(uint64_t address) {
+    return kernel_read16_internal(address);
+}
+
+uint32_t kernel_read32(uint64_t address) {
+    return kernel_read32_internal(address);
+}
+
+uint64_t kernel_read64(uint64_t address) {
+    return kernel_read64_internal(address);
+}
+
+bool kernel_write8(uint64_t address, uint8_t value) {
+    return kernel_write8_internal(address, value);
+}
+
+bool kernel_write16(uint64_t address, uint16_t value) {
+    return kernel_write16_internal(address, value);
+}
+
+bool kernel_write32(uint64_t address, uint32_t value) {
+    return kernel_write32_internal(address, value);
+}
+
+bool kernel_write64(uint64_t address, uint64_t value) {
+    return kernel_write64_internal(address, value);
+}
+
+uint64_t kalloc(vm_size_t size) {
+    return kalloc_internal(size);
+}
+
+bool kfree(mach_vm_address_t address, vm_size_t size) {
+    return kfree_internal(address, size);
+}
+
+size_t kread(uint64_t where, void *p, size_t size) {
+    return kread_internal(where, p, size);
+}
+
+uint64_t task_struct_of_pid(pid_t pid) {
+    return task_struct_of_pid_internal(pid);
+}
+
+uint64_t proc_of_pid(pid_t pid) {
+    return proc_of_pid_internal(pid);
+}
+
+bool verify_tfp0(void) {
+    return verify_tfp0_internal();
 }

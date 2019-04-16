@@ -176,7 +176,7 @@ void inject_trusts(int pathc, NSMutableArray *paths) {
     INFO("trust cache: 0x%llx", tc);
     
     struct trust_chain fake_chain;
-    fake_chain.next = kernel_read64(tc);
+    fake_chain.next = kernel_read64_internal(tc);
 #if __arm64e__
     arc4random_buf(&fake_chain.uuid, 16);
 #else
@@ -199,25 +199,25 @@ void inject_trusts(int pathc, NSMutableArray *paths) {
     fake_chain.count = cnt;
     
     size_t length = (sizeof(fake_chain) + cnt * sizeof(hash_t) + 0x3FFF) & ~0x3FFF;
-    uint64_t kernel_trust = kalloc(length);
+    uint64_t kernel_trust = kalloc_internal(length);
     INFO("kalloc: 0x%llx", kernel_trust);
     
     INFO("writing fake_chain");
-    kernel_write(kernel_trust, &fake_chain, sizeof(fake_chain));
+    kernel_write_internal(kernel_trust, &fake_chain, sizeof(fake_chain));
     INFO("writing allhash");
-    kernel_write(kernel_trust + sizeof(fake_chain), allhash, cnt * sizeof(hash_t));
+    kernel_write_internal(kernel_trust + sizeof(fake_chain), allhash, cnt * sizeof(hash_t));
     INFO("writing trust cache");
     
 #if __arm64e__
     uint64_t f_load_trust_cache = 0;
     f_load_trust_cache = GETOFFSET(f_load_trust_cache);
-    uint32_t ret = kernel_call_7(f_load_trust_cache, 3,
+    uint32_t ret = kernel_call_7_internal(f_load_trust_cache, 3,
                                  kernel_trust,
                                  length,
                                  0);
     INFO("load_trust_cache: 0x%x", ret);
 #else
-    kernel_write64(tc, kernel_trust);
+    kernel_write64_internal(tc, kernel_trust);
 #endif
     
     INFO("injected trust cache");

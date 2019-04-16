@@ -10,23 +10,23 @@
 #include <stdint.h>
 
 /*
- * kernel_call_init
+ * kernel_call_init_internal
  *
  * Description:
  * 	Initialize kernel_call functions.
  */
-bool kernel_call_init(void);
+bool kernel_call_init_internal(void);
 
 /*
- * kernel_call_deinit
+ * kernel_call_deinit_internal
  *
  * Description:
  * 	Deinitialize the kernel call subsystem and restore the kernel to a safe state.
  */
-void kernel_call_deinit(void);
+void kernel_call_deinit_internal(void);
 
 /*
- * kernel_call_7
+ * kernel_call_7_internal
  *
  * Description:
  * 	Call a kernel function with the specified arguments.
@@ -34,7 +34,7 @@ void kernel_call_deinit(void);
  * Restrictions:
  * 	See kernel_call_7v().
  */
-uint32_t kernel_call_7(uint64_t function, size_t argument_count, ...);
+uint32_t kernel_call_7_internal(uint64_t function, size_t argument_count, ...);
 
 /*
  * kernel_call_7v

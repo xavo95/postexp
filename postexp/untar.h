@@ -12,11 +12,11 @@
 #include <stdio.h>
 
 /*
- * untar
+ * untar_internal
  *
  * Description:
  *     Untar a file to a specific task.
  */
-void untar(FILE *a, const char *path);
+void untar_internal(FILE *a, const char *path);
 
 #endif /* tar_h */

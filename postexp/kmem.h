@@ -63,108 +63,108 @@ extern mach_port_t kernel_task_port;
 extern uint64_t current_task;
 
 /*
- * kernel_read
+ * kernel_read_internal
  *
  * Description:
  * 	Read data from kernel memory.
  */
-bool kernel_read(uint64_t address, void *data, size_t size);
+bool kernel_read_internal(uint64_t address, void *data, size_t size);
 
 /*
- * kernel_write
+ * kernel_write_internal
  *
  * Description:
  * 	Write data to kernel memory.
  */
-bool kernel_write(uint64_t address, const void *data, size_t size);
+bool kernel_write_internal(uint64_t address, const void *data, size_t size);
 
 /*
- * kernel_read8
+ * kernel_read8_internal
  *
  * Description:
  * 	Read a single byte from kernel memory. If the read fails, -1 is returned.
  */
-uint8_t kernel_read8(uint64_t address);
+uint8_t kernel_read8_internal(uint64_t address);
 
 /*
- * kernel_read16
+ * kernel_read16_internal
  *
  * Description:
  * 	Read a 16-bit value from kernel memory. If the read fails, -1 is returned.
  */
-uint16_t kernel_read16(uint64_t address);
+uint16_t kernel_read16_internal(uint64_t address);
 
 /*
- * kernel_read32
+ * kernel_read32_internal
  *
  * Description:
  * 	Read a 32-bit value from kernel memory. If the read fails, -1 is returned.
  */
-uint32_t kernel_read32(uint64_t address);
+uint32_t kernel_read32_internal(uint64_t address);
 
 /*
- * kernel_read64
+ * kernel_read64_internal
  *
  * Description:
  * 	Read a 64-bit value from kernel memory. If the read fails, -1 is returned.
  */
-uint64_t kernel_read64(uint64_t address);
+uint64_t kernel_read64_internal(uint64_t address);
 
 /*
- * kernel_write8
+ * kernel_write8_internal
  *
  * Description:
  * 	Write a single byte to kernel memory.
  */
-bool kernel_write8(uint64_t address, uint8_t value);
+bool kernel_write8_internal(uint64_t address, uint8_t value);
 
 /*
- * kernel_write16
+ * kernel_write16_internal
  *
  * Description:
  * 	Write a 16-bit value to kernel memory.
  */
-bool kernel_write16(uint64_t address, uint16_t value);
+bool kernel_write16_internal(uint64_t address, uint16_t value);
 
 /*
- * kernel_write32
+ * kernel_write32_internal
  *
  * Description:
  * 	Write a 32-bit value to kernel memory.
  */
-bool kernel_write32(uint64_t address, uint32_t value);
+bool kernel_write32_internal(uint64_t address, uint32_t value);
 
 /*
- * kernel_write64
+ * kernel_write64_internal
  *
  * Description:
  * 	Write a 64-bit value to kernel memory.
  */
-bool kernel_write64(uint64_t address, uint64_t value);
+bool kernel_write64_internal(uint64_t address, uint64_t value);
 
 /*
- * kalloc
+ * kalloc_internal
  *
  * Description:
  *     Allocate data to kernel memory.
  */
-uint64_t kalloc(vm_size_t size);
+uint64_t kalloc_internal(vm_size_t size);
 
 /*
- * kfree
+ * kfree_internal
  *
  * Description:
  *     Free data from kernel memory.
  */
-bool kfree(mach_vm_address_t address, vm_size_t size);
+bool kfree_internal(mach_vm_address_t address, vm_size_t size);
 
 /*
- * kread
+ * kread_internal
  *
  * Description:
  *     Reads data from kernel memory.
  */
-size_t kread(uint64_t where, void *p, size_t size);
+size_t kread_internal(uint64_t where, void *p, size_t size);
 
 /*
  * kread_pf

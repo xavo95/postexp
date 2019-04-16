@@ -148,7 +148,14 @@ void set_cached_offsets(double kCFCoreFoundationVersionNumber) {
         SETOFFSET(IOUserClient__vtable, slide_addr(find_IOUserClient__vtable()));
         SETOFFSET(IORegistryEntry__getRegistryEntryID, slide_addr(find_IORegistryEntry__getRegistryEntryID()));
     }
-    
+
+    SETOFFSET(cs_blob_generation_count, slide_addr(find_cs_blob_generation_count()));
+    SETOFFSET(cs_find_md, slide_addr(find_cs_find_md()));
+    SETOFFSET(cs_validate_csblob, slide_addr(find_cs_validate_csblob()));
+    SETOFFSET(kalloc_canblock, slide_addr(find_kalloc_canblock()));
+    SETOFFSET(ubc_cs_blob_allocate_site, slide_addr(find_ubc_cs_blob_allocate_site()));
+    SETOFFSET(kfree, slide_addr(find_kfree()));
+
     if(monolithic_kernel) {
         SETOFFSET(monolithic_kernel, true);
     }
