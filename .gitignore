@@ -1,4 +1,6 @@
 **/xcuserdata
 **/xcshareddata
-
+**/build
 *.o
+**/examples/extrabins.tar
+**/examples/iosbinpack64

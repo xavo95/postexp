@@ -6,6 +6,8 @@
 //  Copyright © 2018 Electra Team. All rights reserved.
 //
 
+#ifndef amfi_utils_h
+#define amfi_utils_h
 
 #import <stdio.h>
 #import <sys/types.h>
@@ -33,3 +35,5 @@ struct trust_chain {
     unsigned char uuid[16];
     unsigned int count;
 } __attribute__((packed));
+
+#endif

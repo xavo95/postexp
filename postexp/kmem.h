@@ -15,20 +15,12 @@
 #endif
 
 /*
- * kernel_base
- *
- * Description:
- *     The static kernel base.
- */
-uint64_t static_kernel_base = 0xFFFFFFF007004000;
-
-/*
  * static_kernel
  *
  * Description:
  *     If kernel analyzed by patchfinder is static or not.
  */
-bool static_kernel;
+extern bool static_kernel;
 
 /*
  * kernel_slide
@@ -44,7 +36,7 @@ extern uint64_t kernel_slide;
  * Description:
  *     The slided kernel address.
  */
-uint64_t kernel_load_base;
+extern uint64_t kernel_load_base;
 
 /*
  * kernel_task_port

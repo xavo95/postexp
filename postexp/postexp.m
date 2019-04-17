@@ -58,6 +58,7 @@ ERROR("error moving item %s to path %s (%s)", copyFrom, moveTo, [[error localize
 
 const char *kernel_path = "/System/Library/Caches/com.apple.kernelcaches/kernelcache";
 bool found_offsets = false;
+uint64_t static_kernel_base = 0xFFFFFFF007004000;
 
 enum post_exp_t recover_with_hsp4(mach_port_t *tfp0, uint64_t *ext_kernel_slide, uint64_t *ext_kernel_load_base) {
     struct task_dyld_info dyld_info = { 0 };
@@ -241,9 +242,16 @@ enum post_exp_t set_host_special_port_4_patch(void) {
 
 enum post_exp_t add_to_trustcache(char *trust_path) {
     current_task = task_struct_of_pid_internal(getpid());
+#if __arm64e__
     kernel_call_init_internal();
-    trustbin(trust_path);
+#endif
+    int res = trustbin(trust_path);
+#if __arm64e__
     kernel_call_deinit_internal();
+#endif
+    if (res != 0) {
+        return ERROR_ADDING_TO_TRUSTCACHE;
+    }
     return NO_ERROR;
 }
 
