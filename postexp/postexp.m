@@ -32,8 +32,6 @@
 
 #import "kerneldec/kerneldec.h"
 
-#define in_bundle(obj) strdup([[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@obj] UTF8String])
-
 #define fileExists(file) [[NSFileManager defaultManager] fileExistsAtPath:@(file)]
 
 #define removeFile(file) if (fileExists(file)) {\
@@ -297,6 +295,7 @@ int launch_as_platform(char *binary, char *arg1, char *arg2, char *arg3, char *a
 }
 
 bool kernel_call_init(void) {
+    current_task = task_struct_of_pid_internal(getpid());
     return kernel_call_init_internal();
 }
 

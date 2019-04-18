@@ -4,14 +4,21 @@ CURRENT_DIR = $(shell pwd)
 
 .PHONY: all clean
 
-all: $(OUTDIR)
+all: $(OUTDIR) injector unrestrict package
+
+injector:
+	cd $(CURRENT_DIR)/examples/$@ && make && cd $(CURRENT_DIR)	
+
+unrestrict:
+	cd $(CURRENT_DIR)/examples/$@ && make && cd $(CURRENT_DIR)	
+
+package:
+	tar --disable-copyfile -cvf examples/extrabins.tar -C examples/bin .
+	cp examples/extrabins.tar ../sefebreak/jailbreak-resources/tars
 
 $(OUTDIR):
 	xcodebuild -project postexp.xcodeproj -alltargets -configuration Release
-	cd $(CURRENT_DIR)/examples/injector && make && cd $(CURRENT_DIR)
-	tar --disable-copyfile -cvf examples/extrabins.tar -C examples iosbinpack64
-	cp examples/extrabins.tar ../sefebreak/tars/
 
 clean:
-	rm -rf examples/iosbinpack64 examples/extrabins.tar
+	rm -rf examples/bin examples/extrabins.tar
 	rm -rf $(OUTDIR)

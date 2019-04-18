@@ -3,4 +3,4 @@
 **/build
 *.o
 **/examples/extrabins.tar
-**/examples/iosbinpack64
+**/examples/bin

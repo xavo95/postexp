@@ -1,4 +1,4 @@
-TARGET  = injector
+TARGET  = unrestrict
 OUTDIR ?= ../bin
 POSTEXP_OUT = ../../build/Release-iphoneos
 
