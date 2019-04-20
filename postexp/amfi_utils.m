@@ -71,7 +71,6 @@ uint8_t *getSHA256(const uint8_t* code_dir) {
 }
 
 uint8_t *getCodeDirectory(const char* name) {
-    
     FILE* fd = fopen(name, "r");
     
     uint32_t magic;
@@ -165,7 +164,7 @@ uint8_t *getCodeDirectory(const char* name) {
             fclose(fd);
             return NULL;
         }
-    } else if(cpu_subtype == 0) {
+    } else if((cpu_subtype == 0) || cpu_subtype == 1) {
         if (arm64_index != -1) {
             off = off_array[arm64_index];
             file_off = file_off_array[arm64_index];
