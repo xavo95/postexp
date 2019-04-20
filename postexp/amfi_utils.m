@@ -36,6 +36,16 @@ uint32_t read_magic(FILE* file, off_t offset) {
     return magic;
 }
 
+uint32_t get_cpusubtype() {
+    host_basic_info_data_t basic_info;
+    mach_msg_type_number_t count = HOST_BASIC_INFO_COUNT;
+    kern_return_t kr = host_info(mach_host_self(), HOST_BASIC_INFO, (host_info_t) &basic_info, &count);
+    if(kr != KERN_SUCCESS) {
+        return -1;
+    }
+    return basic_info.cpu_subtype;
+}
+
 void getSHA256inplace(const uint8_t* code_dir, uint8_t *out) {
     if (code_dir == NULL) {
         INFO("NULL passed to getSHA256inplace!");
@@ -68,51 +78,63 @@ uint8_t *getCodeDirectory(const char* name) {
     fread(&magic, sizeof(magic), 1, fd);
     fseek(fd, 0, SEEK_SET);
     
-    long off = 0, file_off = 0;
-    int ncmds = 0;
-    BOOL foundarm64 = false;
+    long off_array[] = { 0, 0 };
+    long file_off_array[] = { 0, 0 };
+    int ncmds_array[] = { 0, 0 };
+    int arm64_index = -1;
+    int arm64e_index = -1;
+    int counter = -1;
     
     if (magic == MH_MAGIC_64) { // 0xFEEDFACF
         struct mach_header_64 mh64;
         fread(&mh64, sizeof(mh64), 1, fd);
-        off = sizeof(mh64);
-        ncmds = mh64.ncmds;
+        counter++;
+        off_array[counter] = sizeof(mh64);
+        ncmds_array[counter] = mh64.ncmds;
+        arm64_index = 0; // If its only arm64 we don't care if it's arm64 or arm64e(should we check for intel 64?)
     }
     else if (magic == MH_MAGIC) {
         ERROR("%s is 32bit. What are you doing here?", name);
         fclose(fd);
         return NULL;
     }
-    else if (magic == 0xBEBAFECA) { //FAT binary magic
-        
+    else if (magic == FAT_CIGAM) { //FAT 32 binary magic
         size_t header_size = sizeof(struct fat_header);
         size_t arch_size = sizeof(struct fat_arch);
         size_t arch_off = header_size;
         
-        struct fat_header *fat = (struct fat_header*)load_bytes(fd, 0, header_size);
-        struct fat_arch *arch = (struct fat_arch *)load_bytes(fd, arch_off, arch_size);
+        struct fat_header *fat = (struct fat_header*)load_bytes(fd, 0, (uint32_t)header_size);
+        struct fat_arch *arch = (struct fat_arch *)load_bytes(fd, arch_off, (uint32_t)arch_size);
         
         int n = swap_uint32(fat->nfat_arch);
-        INFO("binary is FAT with %d architectures", n);
+        INFO("%s binary is FAT with %d architectures", name, n);
         
         while (n-- > 0) {
             magic = read_magic(fd, swap_uint32(arch->offset));
             
             if (magic == 0xFEEDFACF) {
-                INFO("found arm64");
-                foundarm64 = true;
                 struct mach_header_64* mh64 = (struct mach_header_64*)load_bytes(fd, swap_uint32(arch->offset), sizeof(struct mach_header_64));
-                file_off = swap_uint32(arch->offset);
-                off = swap_uint32(arch->offset) + sizeof(struct mach_header_64);
-                ncmds = mh64->ncmds;
-                break;
+                if ((mh64->cpusubtype != 0) && mh64->cpusubtype != 2) {
+                    WARNING("The cpu subtype doesn't match with iphone, it's pc binary too?");
+                } else {
+                    counter++;
+                    INFO("found arm64 variant");
+                    file_off_array[counter] = swap_uint32(arch->offset);
+                    off_array[counter] = swap_uint32(arch->offset) + sizeof(struct mach_header_64);
+                    ncmds_array[counter] = mh64->ncmds;
+                    if(mh64->cpusubtype == 0) {
+                        arm64_index = counter;
+                    } else {
+                        arm64e_index = counter;
+                    }
+                }
             }
             
             arch_off += arch_size;
-            arch = load_bytes(fd, arch_off, arch_size);
+            arch = load_bytes(fd, arch_off, (uint32_t)arch_size);
         }
         
-        if (!foundarm64) { // by the end of the day there's no arm64 found
+        if (counter == -1) { // by the end of the day there's no arm64 found
             ERROR("No arm64? RIP");
             fclose(fd);
             return NULL;
@@ -120,6 +142,41 @@ uint8_t *getCodeDirectory(const char* name) {
     }
     else {
         ERROR("%s is not a macho! (or has foreign endianness?) (magic: %x)", name, magic);
+        fclose(fd);
+        return NULL;
+    }
+    
+    long off = 0;
+    long file_off = 0;
+    int ncmds = 0;
+    
+    uint32_t cpu_subtype = get_cpusubtype();
+    if(cpu_subtype == 2) {
+        if (arm64e_index != -1) {
+            off = off_array[arm64e_index];
+            file_off = file_off_array[arm64e_index];
+            ncmds = ncmds_array[arm64e_index];
+        } else if (arm64_index != -1) {
+            off = off_array[arm64_index];
+            file_off = file_off_array[arm64_index];
+            ncmds = ncmds_array[arm64_index];
+        } else {
+            ERROR("This architecture is arm64e and there are neither arm64 or arm64e");
+            fclose(fd);
+            return NULL;
+        }
+    } else if(cpu_subtype == 0) {
+        if (arm64_index != -1) {
+            off = off_array[arm64_index];
+            file_off = file_off_array[arm64_index];
+            ncmds = ncmds_array[arm64_index];
+        } else {
+            ERROR("This architecture is arm64 and there are no arm64");
+            fclose(fd);
+            return NULL;
+        }
+    } else {
+        ERROR("Invalid cpu subtype");
         fclose(fd);
         return NULL;
     }
@@ -357,6 +414,6 @@ int trustbin(const char *path) {
         }
     }
     
-    inject_trusts([paths count], paths);
+    inject_trusts((int)[paths count], paths);
     return 0;
 }
