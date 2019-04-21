@@ -36,7 +36,7 @@ uint32_t read_magic(FILE* file, off_t offset) {
     return magic;
 }
 
-uint32_t get_cpusubtype() {
+cpu_subtype_t get_cpusubtype() {
     host_basic_info_data_t basic_info;
     mach_msg_type_number_t count = HOST_BASIC_INFO_COUNT;
     kern_return_t kr = host_info(mach_host_self(), HOST_BASIC_INFO, (host_info_t) &basic_info, &count);
@@ -113,19 +113,19 @@ uint8_t *getCodeDirectory(const char* name) {
             
             if (magic == 0xFEEDFACF) {
                 struct mach_header_64* mh64 = (struct mach_header_64*)load_bytes(fd, swap_uint32(arch->offset), sizeof(struct mach_header_64));
-                if ((mh64->cpusubtype != 0) && mh64->cpusubtype != 2) {
-                    WARNING("The cpu subtype doesn't match with iphone, it's pc binary too?");
-                } else {
+                if (mh64->cputype == CPU_TYPE_ARM64) {
                     counter++;
                     INFO("found arm64 variant");
                     file_off_array[counter] = swap_uint32(arch->offset);
                     off_array[counter] = swap_uint32(arch->offset) + sizeof(struct mach_header_64);
                     ncmds_array[counter] = mh64->ncmds;
-                    if(mh64->cpusubtype == 0) {
-                        arm64_index = counter;
-                    } else {
+                    if(mh64->cpusubtype == CPU_SUBTYPE_ARM64E) {
                         arm64e_index = counter;
+                    } else {
+                        arm64_index = counter;
                     }
+                } else {
+                    WARNING("The cpu type doesn't match with iphone, it's pc or watch binary");
                 }
             }
             
@@ -150,7 +150,7 @@ uint8_t *getCodeDirectory(const char* name) {
     int ncmds = 0;
     
     uint32_t cpu_subtype = get_cpusubtype();
-    if(cpu_subtype == 2) {
+    if(cpu_subtype == CPU_SUBTYPE_ARM64E) {
         if (arm64e_index != -1) {
             off = off_array[arm64e_index];
             file_off = file_off_array[arm64e_index];
@@ -164,7 +164,7 @@ uint8_t *getCodeDirectory(const char* name) {
             fclose(fd);
             return NULL;
         }
-    } else if((cpu_subtype == 0) || cpu_subtype == 1) {
+    } else if((cpu_subtype == CPU_SUBTYPE_ARM64_ALL) || cpu_subtype == CPU_SUBTYPE_ARM64_V8) {
         if (arm64_index != -1) {
             off = off_array[arm64_index];
             file_off = file_off_array[arm64_index];
@@ -174,10 +174,6 @@ uint8_t *getCodeDirectory(const char* name) {
             fclose(fd);
             return NULL;
         }
-    } else {
-        ERROR("Invalid cpu subtype");
-        fclose(fd);
-        return NULL;
     }
     
     for (int i = 0; i < ncmds; i++) {
@@ -268,9 +264,9 @@ void inject_trusts(int pathc, NSMutableArray *paths) {
     uint64_t f_load_trust_cache = 0;
     f_load_trust_cache = GETOFFSET(f_load_trust_cache);
     uint32_t ret = kernel_call_7_internal(f_load_trust_cache, 3,
-                                 kernel_trust,
-                                 length,
-                                 0);
+                                          kernel_trust,
+                                          length,
+                                          0);
     INFO("load_trust_cache: 0x%x", ret);
 #else
     kernel_write64_internal(tc, kernel_trust);
@@ -304,8 +300,8 @@ int trustbin(const char *path) {
                                              includingPropertiesForKeys:keys
                                              options:0
                                              errorHandler:^(NSURL *url, NSError *error) {
-                                             if (error) ERROR("%s", [[error localizedDescription] UTF8String]);
-                                             return YES;
+                                                 if (error) ERROR("%s", [[error localizedDescription] UTF8String]);
+                                                 return YES;
                                              }];
         
         for (NSURL *url in enumerator) {
