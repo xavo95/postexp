@@ -62,28 +62,34 @@ enum post_exp_t recover_with_hsp4(mach_port_t *tfp0, uint64_t *ext_kernel_slide,
     struct task_dyld_info dyld_info = { 0 };
     mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
     mach_port_t tfpzero = 0;
-    kern_return_t kr = host_get_special_port(mach_host_self(), HOST_LOCAL_NODE, 4, &tfpzero);
-    if((kr == KERN_SUCCESS) && MACH_PORT_VALID(tfpzero)) {
-        if(task_info(tfpzero, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
-            kernel_task_port = tfpzero;
-            kernel_slide = dyld_info.all_image_info_size;
-            size_t blob_size = kernel_read64_internal(dyld_info.all_image_info_addr);
-            INFO("Restoring persisted offsets cache");
-            struct cache_blob *blob = create_cache_blob(blob_size);
-            if(kernel_read_internal(dyld_info.all_image_info_addr, blob, blob_size)) {
-                import_cache_blob(blob);
-                free(blob);
-                kernel_slide = GETOFFSET(kernel_slide);
-                kernel_load_base = GETOFFSET(kernel_load_base);
-                found_offsets = true;
-            }
-            *ext_kernel_slide = kernel_slide;
-            *ext_kernel_load_base = kernel_load_base;
-            *tfp0 = tfpzero;
-            _offsets_init();
-            return NO_ERROR;
+    kern_return_t kr = task_for_pid(mach_task_self(), 0, &tfpzero);
+    if(kr != KERN_SUCCESS) {
+        kr = host_get_special_port(mach_host_self(), HOST_LOCAL_NODE, 4, &tfpzero);
+        pid_t pid = 10;
+        if((kr != KERN_SUCCESS) || !MACH_PORT_VALID(tfpzero) || !((pid_for_task(tfpzero, &pid) == KERN_SUCCESS) && (pid == 0))) {
+            return ERROR_TFP0_NOT_RECOVERED;
         }
     }
+    if(task_info(tfpzero, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
+        kernel_task_port = tfpzero;
+        kernel_slide = dyld_info.all_image_info_size;
+        size_t blob_size = kernel_read64_internal(dyld_info.all_image_info_addr);
+        INFO("Restoring persisted offsets cache");
+        struct cache_blob *blob = create_cache_blob(blob_size);
+        if(kernel_read_internal(dyld_info.all_image_info_addr, blob, blob_size)) {
+            import_cache_blob(blob);
+            free(blob);
+            kernel_slide = GETOFFSET(kernel_slide);
+            kernel_load_base = GETOFFSET(kernel_load_base);
+            found_offsets = true;
+        }
+        *ext_kernel_slide = kernel_slide;
+        *ext_kernel_load_base = kernel_load_base;
+        *tfp0 = tfpzero;
+        _offsets_init();
+        return NO_ERROR;
+    }
+    
     return ERROR_TFP0_NOT_RECOVERED;
 }
 
