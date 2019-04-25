@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "../kmem.h"
 
 // Generate the name for an offset.
 #define OFFSET(base_, object_)        _##base_##__##object_##__offset_
@@ -60,14 +61,6 @@ struct vtable_pac_codes {
 		.count = sizeof(VTABLE_PAC_CODES_DATA(class_)) / sizeof(uint16_t),	\
 		.codes = (const uint16_t *) VTABLE_PAC_CODES_DATA(class_),		\
 	}
-
-/*
- * kernel_slide
- *
- * Description:
- * 	The kASLR slide.
- */
-uint64_t kernel_slide;
 
 extern uint64_t ADDRESS(paciza_pointer__l2tp_domain_module_start);
 extern uint64_t ADDRESS(paciza_pointer__l2tp_domain_module_stop);

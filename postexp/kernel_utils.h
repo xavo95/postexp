@@ -71,12 +71,12 @@ uint64_t kernel_alloc_wired(uint64_t size);
 void kernel_memcpy(uint64_t dest, uint64_t src, uint32_t length);
 
 /*
- * task_struct_of_pid
+ * task_struct_of_pid_internal
  *
  * Description:
  *     Get tasks struc for pid.
  */
-uint64_t task_struct_of_pid(pid_t pid);
+uint64_t task_struct_of_pid_internal(pid_t pid);
 
 /*
  * convert_port_to_task_port
@@ -95,12 +95,12 @@ void convert_port_to_task_port(mach_port_t port, uint64_t space, uint64_t task_k
 void make_port_fake_task_port(mach_port_t port, uint64_t task_kaddr);
 
 /*
- * proc_of_pid
+ * proc_of_pid_internal
  *
  * Description:
  *     Get proc struct for pid.
  */
-uint64_t proc_of_pid(pid_t pid);
+uint64_t proc_of_pid_internal(pid_t pid);
 
 /*
  * slide_addr
@@ -111,12 +111,12 @@ uint64_t proc_of_pid(pid_t pid);
 uint64_t slide_addr(uint64_t src_addr);
 
 /*
- * verify_tfp0
+ * verify_tfp0_internal
  *
  * Description:
  *     Verifies if we have a valid tfp0.
  */
-bool verify_tfp0(void);
+bool verify_tfp0_internal(void);
 
 /*
  * find_kernel_base

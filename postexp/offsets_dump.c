@@ -148,7 +148,35 @@ void set_cached_offsets(double kCFCoreFoundationVersionNumber) {
         SETOFFSET(IOUserClient__vtable, slide_addr(find_IOUserClient__vtable()));
         SETOFFSET(IORegistryEntry__getRegistryEntryID, slide_addr(find_IORegistryEntry__getRegistryEntryID()));
     }
+
+    SETOFFSET(cs_blob_generation_count, slide_addr(find_cs_blob_generation_count()));
+    SETOFFSET(cs_find_md, slide_addr(find_cs_find_md()));
+    SETOFFSET(cs_validate_csblob, slide_addr(find_cs_validate_csblob()));
+    SETOFFSET(kalloc_canblock, slide_addr(find_kalloc_canblock()));
+    SETOFFSET(ubc_cs_blob_allocate_site, slide_addr(find_ubc_cs_blob_allocate_site()));
+    SETOFFSET(kfree, slide_addr(find_kfree()));
     
+    SETOFFSET(hook_cred_label_update_execve, slide_addr(find_hook_cred_label_update_execve()));
+    SETOFFSET(flow_divert_connect_out, slide_addr(find_flow_divert_connect_out()));
+    SETOFFSET(unix_syscall, slide_addr(find_unix_syscall()));
+    SETOFFSET(pthread_kext_register, slide_addr(find_pthread_kext_register()));
+    SETOFFSET(pthread_callbacks, slide_addr(find_pthread_callbacks()));
+    SETOFFSET(unix_syscall_return, slide_addr(find_unix_syscall_return()));
+    SETOFFSET(sysent, slide_addr(find_sysent()));
+    //    uint64_t find_syscall(int n);
+    SETOFFSET(proc_find, slide_addr(find_proc_find()));
+    //  EX: find_mpo(cred_label_update_execve)
+    //    #define find_mpo(name) find_mpo_entry(offsetof(struct mac_policy_ops, mpo_ ##name))
+    //    uint64_t find_mpo_entry(uint64_t offset);
+    //    uint64_t find_hook_policy_syscall(int n);
+    SETOFFSET(syscall_set_profile, slide_addr(find_syscall_set_profile()));
+    SETOFFSET(sandbox_set_container_copyin, slide_addr(find_sandbox_set_container_copyin()));
+    SETOFFSET(platform_set_container, slide_addr(find_platform_set_container()));
+    SETOFFSET(extension_create_file, slide_addr(find_extension_create_file()));
+    SETOFFSET(extension_add, slide_addr(find_extension_add()));
+    SETOFFSET(extension_release, slide_addr(find_extension_release()));
+    SETOFFSET(sfree, slide_addr(find_sfree()));
+
     if(monolithic_kernel) {
         SETOFFSET(monolithic_kernel, true);
     }

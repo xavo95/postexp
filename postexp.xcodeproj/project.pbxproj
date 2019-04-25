@@ -7,6 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		784F42662270B053005C2E76 /* patchfinder64.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487C822384C67008601C7 /* patchfinder64.c */; };
+		784F42672270B053005C2E76 /* offsets.m in Sources */ = {isa = PBXBuildFile; fileRef = 917487A022372535008601C7 /* offsets.m */; };
+		784F42682270B053005C2E76 /* offsetof.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487B222372536008601C7 /* offsetof.c */; };
+		784F42692270B053005C2E76 /* platform_match.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487E422386C09008601C7 /* platform_match.c */; };
+		784F426A2270B053005C2E76 /* post-common.m in Sources */ = {isa = PBXBuildFile; fileRef = 917487A322372535008601C7 /* post-common.m */; };
+		784F426B2270B053005C2E76 /* kmem.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487AA22372536008601C7 /* kmem.c */; };
+		784F426C2270B053005C2E76 /* kernel_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879B22372535008601C7 /* kernel_utils.c */; };
+		784F426D2270B053005C2E76 /* kerneldec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 917488412253F7AF008601C7 /* kerneldec.cpp */; };
+		784F426E2270B053005C2E76 /* launch_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487A622372535008601C7 /* launch_utils.c */; };
+		784F426F2270B053005C2E76 /* platform.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487E722386C66008601C7 /* platform.c */; };
+		784F42702270B053005C2E76 /* log.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879622372535008601C7 /* log.c */; };
+		784F42712270B053005C2E76 /* offsets_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879522372535008601C7 /* offsets_dump.c */; };
+		784F42722270B053005C2E76 /* amfi_utils.m in Sources */ = {isa = PBXBuildFile; fileRef = 9174879A22372535008601C7 /* amfi_utils.m */; };
+		784F42732270B053005C2E76 /* lzssdec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 917488402253F7AF008601C7 /* lzssdec.cpp */; };
+		784F42742270B053005C2E76 /* kernel_call.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487CE22385429008601C7 /* kernel_call.c */; };
+		784F42752270B053005C2E76 /* macho-helper.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879922372535008601C7 /* macho-helper.c */; };
+		784F42762270B053005C2E76 /* offsetcache.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174882D224E0C44008601C7 /* offsetcache.c */; };
+		784F42772270B053005C2E76 /* pac.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487D822385429008601C7 /* pac.c */; };
+		784F42782270B053005C2E76 /* kc_parameters.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487D422385429008601C7 /* kc_parameters.c */; };
+		784F42792270B053005C2E76 /* root.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487A722372535008601C7 /* root.c */; };
+		784F427A2270B053005C2E76 /* user_client.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487D322385429008601C7 /* user_client.c */; };
+		784F427B2270B053005C2E76 /* untar.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879422372534008601C7 /* untar.c */; };
+		784F427C2270B053005C2E76 /* sandbox.c in Sources */ = {isa = PBXBuildFile; fileRef = 917487A222372535008601C7 /* sandbox.c */; };
+		784F427D2270B053005C2E76 /* remap_tfp_set_hsp.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879822372535008601C7 /* remap_tfp_set_hsp.c */; };
+		784F427E2270B053005C2E76 /* postexp.m in Sources */ = {isa = PBXBuildFile; fileRef = 9174878B2237236E008601C7 /* postexp.m */; };
 		9174878C2237236E008601C7 /* postexp.m in Sources */ = {isa = PBXBuildFile; fileRef = 9174878B2237236E008601C7 /* postexp.m */; };
 		9174878D2237236E008601C7 /* postexp.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9174878A2237236E008601C7 /* postexp.h */; };
 		917487B322372536008601C7 /* untar.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879422372534008601C7 /* untar.c */; };
@@ -49,6 +74,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		784F42852270B053005C2E76 /* postexp.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = postexp.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		917487872237236E008601C7 /* libpostexp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libpostexp.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9174878A2237236E008601C7 /* postexp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = postexp.h; sourceTree = "<group>"; };
 		9174878B2237236E008601C7 /* postexp.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = postexp.m; sourceTree = "<group>"; };
@@ -107,6 +133,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		784F427F2270B053005C2E76 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		917487842237236E008601C7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -133,6 +166,7 @@
 			isa = PBXGroup;
 			children = (
 				917487872237236E008601C7 /* libpostexp.a */,
+				784F42852270B053005C2E76 /* postexp.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -245,6 +279,22 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		784F42642270B053005C2E76 /* postexp-dynamic */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 784F42822270B053005C2E76 /* Build configuration list for PBXNativeTarget "postexp-dynamic" */;
+			buildPhases = (
+				784F42652270B053005C2E76 /* Sources */,
+				784F427F2270B053005C2E76 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "postexp-dynamic";
+			productName = postexp;
+			productReference = 784F42852270B053005C2E76 /* postexp.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
 		917487862237236E008601C7 /* postexp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 917487902237236E008601C7 /* Build configuration list for PBXNativeTarget "postexp" */;
@@ -289,11 +339,44 @@
 			projectRoot = "";
 			targets = (
 				917487862237236E008601C7 /* postexp */,
+				784F42642270B053005C2E76 /* postexp-dynamic */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		784F42652270B053005C2E76 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				784F42662270B053005C2E76 /* patchfinder64.c in Sources */,
+				784F42672270B053005C2E76 /* offsets.m in Sources */,
+				784F42682270B053005C2E76 /* offsetof.c in Sources */,
+				784F42692270B053005C2E76 /* platform_match.c in Sources */,
+				784F426A2270B053005C2E76 /* post-common.m in Sources */,
+				784F426B2270B053005C2E76 /* kmem.c in Sources */,
+				784F426C2270B053005C2E76 /* kernel_utils.c in Sources */,
+				784F426D2270B053005C2E76 /* kerneldec.cpp in Sources */,
+				784F426E2270B053005C2E76 /* launch_utils.c in Sources */,
+				784F426F2270B053005C2E76 /* platform.c in Sources */,
+				784F42702270B053005C2E76 /* log.c in Sources */,
+				784F42712270B053005C2E76 /* offsets_dump.c in Sources */,
+				784F42722270B053005C2E76 /* amfi_utils.m in Sources */,
+				784F42732270B053005C2E76 /* lzssdec.cpp in Sources */,
+				784F42742270B053005C2E76 /* kernel_call.c in Sources */,
+				784F42752270B053005C2E76 /* macho-helper.c in Sources */,
+				784F42762270B053005C2E76 /* offsetcache.c in Sources */,
+				784F42772270B053005C2E76 /* pac.c in Sources */,
+				784F42782270B053005C2E76 /* kc_parameters.c in Sources */,
+				784F42792270B053005C2E76 /* root.c in Sources */,
+				784F427A2270B053005C2E76 /* user_client.c in Sources */,
+				784F427B2270B053005C2E76 /* untar.c in Sources */,
+				784F427C2270B053005C2E76 /* sandbox.c in Sources */,
+				784F427D2270B053005C2E76 /* remap_tfp_set_hsp.c in Sources */,
+				784F427E2270B053005C2E76 /* postexp.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		917487832237236E008601C7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -329,6 +412,62 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		784F42832270B053005C2E76 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					arm64e,
+					arm64,
+				);
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 3R6W93JCRA;
+				DYLIB_INSTALL_NAME_BASE = /var/containers/Bundle/iosbinpack64/;
+				ENABLE_BITCODE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/patchfinder64",
+					"$(SRCROOT)/include",
+					"$(SRCROOT)/offset-cache",
+				);
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-framework",
+					IOKit,
+				);
+				PRODUCT_NAME = postexp;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = "arm64e arm64";
+			};
+			name = Debug;
+		};
+		784F42842270B053005C2E76 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					arm64e,
+					arm64,
+				);
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 3R6W93JCRA;
+				DYLIB_INSTALL_NAME_BASE = /var/containers/Bundle/iosbinpack64/;
+				ENABLE_BITCODE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/patchfinder64",
+					"$(SRCROOT)/include",
+					"$(SRCROOT)/offset-cache",
+				);
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-framework",
+					IOKit,
+				);
+				PRODUCT_NAME = postexp;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = "arm64e arm64";
+			};
+			name = Release;
+		};
 		9174878E2237236E008601C7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -513,6 +652,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		784F42822270B053005C2E76 /* Build configuration list for PBXNativeTarget "postexp-dynamic" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				784F42832270B053005C2E76 /* Debug */,
+				784F42842270B053005C2E76 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		917487822237236E008601C7 /* Build configuration list for PBXProject "postexp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

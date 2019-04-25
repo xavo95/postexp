@@ -12,19 +12,19 @@
 #include <stdio.h>
 
 /*
- * launch
+ * launch_internal
  *
  * Description:
  *     Launch a binary.
  */
-int launch(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env);
+int launch_internal(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env);
 
 /*
- * launchAsPlatform
+ * launch_as_platform_internal
  *
  * Description:
  *     Launch a binary as platform binary.
  */
-int launch_as_platform(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env);
+int launch_as_platform_internal(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env);
 
 #endif /* launch_utils_h */

@@ -144,7 +144,7 @@ verify_checksum(const char *p)
 
 /* Extract a tar archive. */
 void
-untar(FILE *a, const char *path)
+untar_internal(FILE *a, const char *path)
 {
     char buff[512];
     int f = -1;

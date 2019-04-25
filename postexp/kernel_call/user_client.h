@@ -16,7 +16,7 @@
  * Description:
  * 	The kernel task port.
  */
-mach_port_t kernel_task_port;
+extern mach_port_t kernel_task_port;
 
 /*
  * kernel_ipc_port_lookup

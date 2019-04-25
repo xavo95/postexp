@@ -59,14 +59,14 @@ void set_all_image_info_addr(uint64_t kernel_task_kaddr) {
     if(task_info(kernel_task_port, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS) {
         INFO("Will save offsets to all_image_info_addr");
         if (dyld_info.all_image_info_addr && dyld_info.all_image_info_addr != kernel_load_base && dyld_info.all_image_info_addr > kernel_load_base) {
-            size_t blob_size = kernel_read64(dyld_info.all_image_info_addr);
+            size_t blob_size = kernel_read64_internal(dyld_info.all_image_info_addr);
             struct cache_blob *blob = create_cache_blob(blob_size);
-            kernel_read(dyld_info.all_image_info_addr, blob, blob_size);
+            kernel_read_internal(dyld_info.all_image_info_addr, blob, blob_size);
             // Adds any entries that are in kernel but we don't have
             merge_cache_blob(blob);
             free(blob);
             // Free old offset cache - didn't bother comparing because it's faster to just replace it if it's the same
-            kfree(dyld_info.all_image_info_addr, blob_size);
+            kfree_internal(dyld_info.all_image_info_addr, blob_size);
         }
         struct cache_blob *cache;
         size_t cache_size = export_cache_blob(&cache);
@@ -75,9 +75,9 @@ void set_all_image_info_addr(uint64_t kernel_task_kaddr) {
         SETOFFSET(kernel_slide, kernel_slide);
         uint64_t kernel_cache_blob = kernel_alloc_wired(cache_size);
         blob_rebase(cache, (uint64_t)cache, kernel_cache_blob);
-        kernel_write(kernel_cache_blob, cache, cache_size);
+        kernel_write_internal(kernel_cache_blob, cache, cache_size);
         free(cache);
-        kernel_write64(kernel_task_kaddr + _koffset(KSTRUCT_OFFSET_TASK_ALL_IMAGE_INFO_ADDR), kernel_cache_blob);
+        kernel_write64_internal(kernel_task_kaddr + _koffset(KSTRUCT_OFFSET_TASK_ALL_IMAGE_INFO_ADDR), kernel_cache_blob);
         //        TODO: add this assertions
         //        _assert(task_info(tfp0, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS, message, true);
         //        _assert(dyld_info.all_image_info_addr == kernel_cache_blob, message, true);
@@ -93,7 +93,7 @@ void set_all_image_info_size(uint64_t kernel_task_kaddr, uint64_t all_image_info
         INFO("Will set all_image_info_size to: %llu", all_image_info_size);
         if (dyld_info.all_image_info_size != all_image_info_size) {
             INFO("Setting all_image_info_size...");
-            kernel_write64(kernel_task_kaddr + _koffset(KSTRUCT_OFFSET_TASK_ALL_IMAGE_INFO_SIZE), all_image_info_size);
+            kernel_write64_internal(kernel_task_kaddr + _koffset(KSTRUCT_OFFSET_TASK_ALL_IMAGE_INFO_SIZE), all_image_info_size);
 //          TODO: add this assertions
 //          task_info(tfp0, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count) == KERN_SUCCESS
 //          dyld_info.all_image_info_size == all_image_info_size
@@ -149,7 +149,7 @@ int setHSP4() {
     
     {
         // find kernel task first
-        kernel_task_kaddr = task_struct_of_pid(0);
+        kernel_task_kaddr = task_struct_of_pid_internal(0);
         
         if (kernel_task_kaddr == 0) {
             printf("[remap_kernel_task] failed to find kernel task\n");
@@ -176,10 +176,10 @@ int setHSP4() {
     // strref \"Nothing being freed to the zone_map. start = end = %p\\n\"
     // or traditional \"zone_init: kmem_suballoc failed\"
     uint64_t zone_map_kptr = GETOFFSET(zone_map_ref);
-    uint64_t zone_map = kernel_read64(zone_map_kptr);
+    uint64_t zone_map = kernel_read64_internal(zone_map_kptr);
     
     // kernel_task->vm_map == kernel_map
-    uint64_t kernel_map = kernel_read64(kernel_task_kaddr + _koffset(KSTRUCT_OFFSET_TASK_VM_MAP));
+    uint64_t kernel_map = kernel_read64_internal(kernel_task_kaddr + _koffset(KSTRUCT_OFFSET_TASK_VM_MAP));
     
     uint64_t zm_fake_task_kptr = make_fake_task(zone_map);
     uint64_t km_fake_task_kptr = make_fake_task(kernel_map);
@@ -226,7 +226,7 @@ int setHSP4() {
     
     make_port_fake_task_port(*port, remapped_task_addr);
     
-    if (kernel_read64(port_kaddr + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT)) != remapped_task_addr) {
+    if (kernel_read64_internal(port_kaddr + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT)) != remapped_task_addr) {
         printf("[remap_kernel_task] read back tfpzero kobject didnt match!\n");
         return 1;
     }
@@ -234,8 +234,8 @@ int setHSP4() {
     // lck_mtx -- arm: 8  arm64: 16
     const int off_host_special = 0x10;
     uint64_t host_priv_kaddr = find_port_address(mach_host_self());
-    uint64_t realhost_kaddr = kernel_read64(host_priv_kaddr + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT));
-    kernel_write64(realhost_kaddr + off_host_special + 4 * sizeof(void*), port_kaddr);
+    uint64_t realhost_kaddr = kernel_read64_internal(host_priv_kaddr + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT));
+    kernel_write64_internal(realhost_kaddr + off_host_special + 4 * sizeof(void*), port_kaddr);
 #ifdef CLASSIC_FILE_STYLE
     set_all_image_info_addr(kernel_task_kaddr, kernel_base);
 #else
