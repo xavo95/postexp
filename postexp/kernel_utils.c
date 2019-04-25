@@ -95,7 +95,7 @@ mach_port_t fake_host_priv(void) {
     kern_return_t err;
     err = mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &port);
     if (err != KERN_SUCCESS) {
-        printf("[-] failed to allocate port\n");
+        ERROR("failed to allocate port");
         return MACH_PORT_NULL;
     }
     // get a send right
@@ -120,7 +120,7 @@ mach_port_t fake_host_priv(void) {
 
 uint64_t kernel_alloc_wired(uint64_t size) {
     if (kernel_task_port == MACH_PORT_NULL) {
-        printf("[-] attempt to allocate kernel memory before any kernel memory write primitives available\n");
+        ERROR("attempt to allocate kernel memory before any kernel memory write primitives available");
         sleep(3);
         return 0;
     }
@@ -129,25 +129,25 @@ uint64_t kernel_alloc_wired(uint64_t size) {
     mach_vm_address_t addr = 0;
     mach_vm_size_t ksize = round_page_kernel(size);
     
-    printf("[*] vm_kernel_page_size: %lx\n", vm_kernel_page_size);
+    INFO("vm_kernel_page_size: %lx", vm_kernel_page_size);
     
     err = mach_vm_allocate(kernel_task_port, &addr, ksize+0x4000, VM_FLAGS_ANYWHERE);
     if (err != KERN_SUCCESS) {
-        printf("[-] unable to allocate kernel memory via tfp0: %s %x\n", mach_error_string(err), err);
+        ERROR("unable to allocate kernel memory via tfp0: %s %x", mach_error_string(err), err);
         sleep(3);
         return 0;
     }
     
-    printf("[+] allocated address: %llx\n", addr);
+    INFO("allocated address: %llx", addr);
     
     addr += 0x3fff;
     addr &= ~0x3fffull;
     
-    printf("[*] address to wire: %llx\n", addr);
+    INFO("address to wire: %llx", addr);
     
     err = mach_vm_wire(fake_host_priv(), kernel_task_port, addr, ksize, VM_PROT_READ|VM_PROT_WRITE);
     if (err != KERN_SUCCESS) {
-        printf("[-] unable to wire kernel memory via tfp0: %s %x\n", mach_error_string(err), err);
+        ERROR("unable to wire kernel memory via tfp0: %s %x", mach_error_string(err), err);
         sleep(3);
         return 0;
     }

@@ -17,6 +17,6 @@
  * Description:
  *     Set Host special port 4.
  */
-int setHSP4(void);
+int set_hsp4(void);
 
 #endif /* remap_tfp_set_hsp_h */

@@ -29,6 +29,7 @@
 #include "patchfinder64.h"
 #include "untar.h"
 #include "amfi_utils.h"
+#include "nvram_utils.h"
 
 #import "kerneldec/kerneldec.h"
 
@@ -236,7 +237,7 @@ enum post_exp_t initialize_patchfinder64(bool use_static_kernel) {
 
 enum post_exp_t set_host_special_port_4_patch(void) {
     //---- host special port 4 ----//
-    if(setHSP4()) {
+    if(set_hsp4()) {
         ERROR("failed to set tfp0 as hsp4!");
         cleanup();
         return ERROR_SETTING_HSP4;
@@ -383,4 +384,24 @@ uint64_t proc_of_pid(pid_t pid) {
 
 bool verify_tfp0(void) {
     return verify_tfp0_internal();
+}
+
+void unlock_nvram(void) {
+    unlock_nvram_internal();
+}
+
+int lock_nvram(void) {
+    return lock_nvram_internal();
+}
+
+int respring(char *killall_path) {
+    return launch_internal(killall_path, "-9", "SpringBoard", NULL, NULL, NULL, NULL, NULL);
+}
+
+int unload_launchdeamons(char *launchctl_path, char *launchdaemon_folder) {
+    return launch_internal(launchctl_path, "unload", launchdaemon_folder, NULL, NULL, NULL, NULL, NULL);
+}
+
+int load_launchdeamons(char *launchctl_path, char *launchdaemon_folder) {
+    return launch_internal(launchctl_path, "load", launchdaemon_folder, NULL, NULL, NULL, NULL, NULL);
 }

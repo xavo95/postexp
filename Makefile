@@ -13,6 +13,7 @@ unrestrict:
 	cd $(CURRENT_DIR)/examples/$@ && make && cd $(CURRENT_DIR)	
 
 package:
+	cp build/Release-iphoneos/postexp.dylib examples/bin/
 	tar --disable-copyfile -cvf examples/extrabins.tar -C examples/bin .
 	cp examples/extrabins.tar ../sefebreak/jailbreak-resources/tars
 

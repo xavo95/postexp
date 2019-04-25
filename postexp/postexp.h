@@ -285,4 +285,44 @@ uint64_t proc_of_pid(pid_t pid);
  */
 bool verify_tfp0(void);
 
+/*
+ * unlock_nvram
+ *
+ * Description:
+ *     Unlocks NVRAM for setting boot nonce.
+ */
+void unlock_nvram(void);
+
+/*
+ * lock_nvram
+ *
+ * Description:
+ *     Locks NVRAM after setting boot nonce.
+ */
+int lock_nvram(void);
+
+/*
+ * respring
+ *
+ * Description:
+ *     Restarts springboard.
+ */
+int respring(char *killall_path);
+
+/*
+ * unload_launchdeamons
+ *
+ * Description:
+ *     Unloads LaunchDaemons at path.
+ */
+int unload_launchdeamons(char *launchctl_path, char *launchdaemon_folder);
+
+/*
+ * load_launchdeamons
+ *
+ * Description:
+ *     Loads LaunchDaemons at path.
+ */
+int load_launchdeamons(char *launchctl_path, char *launchdaemon_folder);
+
 #endif /* postexp_h */

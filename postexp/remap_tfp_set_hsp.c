@@ -103,7 +103,7 @@ void set_all_image_info_size(uint64_t kernel_task_kaddr, uint64_t all_image_info
     }
 }
 
-int setHSP4() {
+int set_hsp4() {
     // huge thanks to Siguza for hsp4 & v0rtex
     // for explainations and being a good rubber duck :p
     
@@ -152,11 +152,11 @@ int setHSP4() {
         kernel_task_kaddr = task_struct_of_pid_internal(0);
         
         if (kernel_task_kaddr == 0) {
-            printf("[remap_kernel_task] failed to find kernel task\n");
+            ERROR("[remap_kernel_task] failed to find kernel task");
             return 1;
         }
         
-        printf("[remap_kernel_task] kernel task at 0x%llx\n", kernel_task_kaddr);
+        INFO("[remap_kernel_task] kernel task at 0x%llx", kernel_task_kaddr);
     }
     
     mach_port_t zm_fake_task_port = MACH_PORT_NULL;
@@ -169,7 +169,7 @@ int setHSP4() {
     }
     
     if (ret != KERN_SUCCESS) {
-        printf("[remap_kernel_task] unable to allocate ports: 0x%x (%s)\n", ret, mach_error_string(ret));
+        ERROR("[remap_kernel_task] unable to allocate ports: 0x%x (%s)", ret, mach_error_string(ret));
         return 1;
     }
     
@@ -203,31 +203,31 @@ int setHSP4() {
     
     
     if (ret != KERN_SUCCESS) {
-        printf("[remap_kernel_task] remap failed: 0x%x (%s)\n", ret, mach_error_string(ret));
+        ERROR("[remap_kernel_task] remap failed: 0x%x (%s)", ret, mach_error_string(ret));
         return 1;
     }
     
     if (kernel_task_kaddr == remapped_task_addr) {
-        printf("[remap_kernel_task] remap failure: addr is the same after remap\n");
+        ERROR("[remap_kernel_task] remap failure: addr is the same after remap");
         return 1;
     }
     
-    printf("[remap_kernel_task] remapped successfully to 0x%llx\n", remapped_task_addr);
+    INFO("[remap_kernel_task] remapped successfully to 0x%llx", remapped_task_addr);
     
     ret = mach_vm_wire(host_priv, km_fake_task_port, remapped_task_addr, sizeof_task, VM_PROT_READ | VM_PROT_WRITE);
     
     if (ret != KERN_SUCCESS) {
-        printf("[remap_kernel_task] wire failed: 0x%x (%s)\n", ret, mach_error_string(ret));
+        ERROR("[remap_kernel_task] wire failed: 0x%x (%s)", ret, mach_error_string(ret));
         return 1;
     }
     
     uint64_t port_kaddr = find_port_address(*port);
-    printf("[remap_kernel_task] port kaddr: 0x%llx\n", port_kaddr);
+    INFO("[remap_kernel_task] port kaddr: 0x%llx", port_kaddr);
     
     make_port_fake_task_port(*port, remapped_task_addr);
     
     if (kernel_read64_internal(port_kaddr + _koffset(KSTRUCT_OFFSET_IPC_PORT_IP_KOBJECT)) != remapped_task_addr) {
-        printf("[remap_kernel_task] read back tfpzero kobject didnt match!\n");
+        ERROR("[remap_kernel_task] read back tfpzero kobject didnt match!");
         return 1;
     }
     

@@ -13,7 +13,6 @@
 #include "offsetof.h"
 
 uint64_t old_sandbox_slot = 0;
-uint32_t old_csflags = 0;
 
 void save_proc_sandbox_struct(uint64_t task) {
     uint64_t cr_label = kernel_get_cr_label_for_task(task);
@@ -34,7 +33,7 @@ bool sandbox(uint64_t task) {
 
 bool setcsflags(uint64_t task) {
     uint64_t proc = kernel_get_proc_for_task(task);
-    old_csflags = kernel_read32_internal(proc + off_p_csflags);
+    uint32_t old_csflags = kernel_read32_internal(proc + off_p_csflags);
     uint32_t newflags = (old_csflags | CS_PLATFORM_BINARY | CS_INSTALLER | CS_GET_TASK_ALLOW | CS_DEBUGGED) & ~(CS_RESTRICT | CS_HARD | CS_KILL);
     kernel_write32_internal(proc + off_p_csflags, newflags);
     return (kernel_read32_internal(proc + off_p_csflags) == newflags) ? true : false;
@@ -43,6 +42,8 @@ bool setcsflags(uint64_t task) {
 void restore_csflags(uint64_t task) {
     uint64_t proc = kernel_get_proc_for_task(task);
     unplatformize(task);
+    uint32_t old_csflags = kernel_read32_internal(proc + off_p_csflags);
+    old_csflags = (old_csflags & ~(CS_PLATFORM_BINARY | CS_INSTALLER | CS_GET_TASK_ALLOW | CS_DEBUGGED)) & (CS_RESTRICT | CS_HARD | CS_KILL);
     kernel_write32_internal(proc + off_p_csflags, old_csflags); //patch csflags
 }
 
