@@ -217,7 +217,6 @@ uint64_t proc_of_pid_internal(pid_t pid) {
         proc = kernel_read64_internal(proc + _koffset(KSTRUCT_OFFSET_PROC_P_LIST));
     }
     return 0;
-
 }
 
 uint64_t slide_addr(uint64_t src_addr) {
@@ -318,4 +317,38 @@ uint64_t get_address_of_port(pid_t pid, mach_port_t port) {
         return 0;
     }
     return port_addr;
+}
+
+uint64_t zm_fix_addr(uint64_t addr) {
+    static kmap_hdr_t zm_hdr = {0, 0, 0, 0};
+    
+    if (zm_hdr.start == 0) {
+        uint64_t zone_map = kernel_read64_internal(GETOFFSET(zone_map_ref));
+        INFO("zone_map: %llx ", zone_map);
+        // hdr is at offset 0x10, mutexes at start
+        size_t r = kread_internal(zone_map + 0x10, &zm_hdr, sizeof(zm_hdr));
+        INFO("zm_range: 0x%llx - 0x%llx (read 0x%zx, exp 0x%zx)", zm_hdr.start, zm_hdr.end, r, sizeof(zm_hdr));
+        if (r != sizeof(zm_hdr) || zm_hdr.start == 0 || zm_hdr.end == 0) {
+            ERROR("kread of zone_map failed!");
+            return 0;
+        }
+        if (zm_hdr.end - zm_hdr.start > 0x100000000) {
+            ERROR("zone_map is too big, sorry.");
+            return 0;
+        }
+    }
+    uint64_t zm_tmp = (zm_hdr.start & 0xffffffff00000000) | ((addr) & 0xffffffff);
+    return zm_tmp < zm_hdr.start ? zm_tmp + 0x100000000 : zm_tmp;
+}
+
+unsigned int pid_of_proc_name_internal(char *nm) {
+    uint64_t proc = kernel_read64_internal(kernel_read64_internal(GETOFFSET(kernel_task)) + _koffset(KSTRUCT_OFFSET_TASK_BSD_INFO));
+    char name[40] = {0};
+    while (proc) {
+        kernel_read_internal(proc + off_p_comm, name, 40);
+        if (strstr(name, nm))
+            return kernel_read32_internal(proc + off_p_pid);
+        proc = kernel_read64_internal(proc + _koffset(KSTRUCT_OFFSET_PROC_P_LIST));
+    }
+    return 0;
 }

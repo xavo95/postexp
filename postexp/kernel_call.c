@@ -10,24 +10,33 @@
 #include "user_client.h"
 #include "log.h"
 
+static bool kernel_call_inited = false;
+
 // ---- Public API --------------------------------------------------------------------------------
 
 bool
 kernel_call_init_internal() {
-	bool ok = stage1_kernel_call_init()
-		&& stage2_kernel_call_init()
-		&& stage3_kernel_call_init();
-	if (!ok) {
-		kernel_call_deinit_internal();
-	}
-	return ok;
+    if(!kernel_call_inited) {
+        bool ok = stage1_kernel_call_init()
+        && stage2_kernel_call_init()
+        && stage3_kernel_call_init();
+        kernel_call_inited = true;
+        if (!ok) {
+            kernel_call_deinit_internal();
+        }
+        return ok;
+    }
+    return true;
 }
 
 void
 kernel_call_deinit_internal() {
-	stage3_kernel_call_deinit();
-	stage2_kernel_call_deinit();
-	stage1_kernel_call_deinit();
+    if(kernel_call_inited) {
+        stage3_kernel_call_deinit();
+        stage2_kernel_call_deinit();
+        stage1_kernel_call_deinit();
+        kernel_call_inited = false;
+    }
 }
 
 uint32_t

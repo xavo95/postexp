@@ -17,6 +17,7 @@
 #include "kernel_call.h"
 #include "postexp.h"
 #include "offsets.h"
+#include "offsetof.h"
 #include "root.h"
 #include "sandbox.h"
 #include "log.h"
@@ -30,6 +31,7 @@
 #include "untar.h"
 #include "amfi_utils.h"
 #include "nvram_utils.h"
+#include "vnode_utils.h"
 
 #import "kerneldec/kerneldec.h"
 
@@ -287,6 +289,39 @@ void cleanup(void) {
     unroot(current_task);
 }
 
+uint64_t get_vnode_at_path(const char *path) {
+    uint64_t *vnode_ptr = (uint64_t *)malloc(8);
+    if (vnode_lookup(path, 0, vnode_ptr, get_vfs_context())) {
+        ERROR("unable to get vnode from path for %s", path);
+        free(vnode_ptr);
+        return -1;
+    }
+    else {
+        uint64_t vnode = *vnode_ptr;
+        free(vnode_ptr);
+        return vnode;
+    }
+}
+
+int fix_mmap(char *path) {
+    // for you all sandbox-blocked-mmap-ers
+    // it's your time to get freedom
+    // say hello to this guy
+    
+#define VSHARED_DYLD 0x000200
+    
+    uint64_t vnode = get_vnode_at_path(path);
+    if (vnode == -1) {
+        ERROR("unable to fix mmap of path: %s", path);
+        return NO;
+    }
+    uint32_t v_flags = kernel_read32_internal(vnode + off_v_flags);
+    kernel_write32_internal(vnode + off_v_flags, v_flags | VSHARED_DYLD);
+    
+    vnode_put(vnode);
+    return kernel_read32_internal(vnode + off_v_flags) & VSHARED_DYLD;
+}
+
 ///////////////////////////////////////////// ADVANCED EXPORT METHODS /////////////////////////////////////////////
 
 void untar(FILE *a, const char *path) {
@@ -404,4 +439,12 @@ int unload_launchdeamons(char *launchctl_path, char *launchdaemon_folder) {
 
 int load_launchdeamons(char *launchctl_path, char *launchdaemon_folder) {
     return launch_internal(launchctl_path, "load", launchdaemon_folder, NULL, NULL, NULL, NULL, NULL);
+}
+
+unsigned int pid_of_proc_name(char *nm) {
+    return pid_of_proc_name_internal(nm);
+}
+
+uint64_t get_symbol_by_name(char *name) {
+    return get_offset(name);
 }

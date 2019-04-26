@@ -91,6 +91,7 @@ void set_cached_offsets(double kCFCoreFoundationVersionNumber) {
     SETOFFSET(kernel_slide, kernel_slide);
     SETOFFSET(kernel_load_base, kernel_slide);
     SETOFFSET(allproc, slide_addr(find_allproc()));
+    SETOFFSET(kernproc, slide_addr(find_kernproc()));
     if (!auth_ptrs) {
         SETOFFSET(add_x0_x0_0x40_ret, slide_addr(find_add_x0_x0_0x40_ret()));
     }

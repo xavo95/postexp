@@ -34,6 +34,8 @@
 		784F427E2270B053005C2E76 /* postexp.m in Sources */ = {isa = PBXBuildFile; fileRef = 9174878B2237236E008601C7 /* postexp.m */; };
 		9162DBF92271EB740004EEA5 /* nvram_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 9162DBF82271EB740004EEA5 /* nvram_utils.c */; };
 		9162DBFA2271EB740004EEA5 /* nvram_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 9162DBF82271EB740004EEA5 /* nvram_utils.c */; };
+		9162DBFD227203D80004EEA5 /* vnode_utils.m in Sources */ = {isa = PBXBuildFile; fileRef = 9162DBFC227203D80004EEA5 /* vnode_utils.m */; };
+		9162DBFE227203D80004EEA5 /* vnode_utils.m in Sources */ = {isa = PBXBuildFile; fileRef = 9162DBFC227203D80004EEA5 /* vnode_utils.m */; };
 		9174878C2237236E008601C7 /* postexp.m in Sources */ = {isa = PBXBuildFile; fileRef = 9174878B2237236E008601C7 /* postexp.m */; };
 		9174878D2237236E008601C7 /* postexp.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9174878A2237236E008601C7 /* postexp.h */; };
 		917487B322372536008601C7 /* untar.c in Sources */ = {isa = PBXBuildFile; fileRef = 9174879422372534008601C7 /* untar.c */; };
@@ -79,6 +81,8 @@
 		784F42852270B053005C2E76 /* postexp.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = postexp.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		9162DBF72271EB740004EEA5 /* nvram_utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = nvram_utils.h; sourceTree = "<group>"; };
 		9162DBF82271EB740004EEA5 /* nvram_utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nvram_utils.c; sourceTree = "<group>"; };
+		9162DBFB227203D80004EEA5 /* vnode_utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vnode_utils.h; sourceTree = "<group>"; };
+		9162DBFC227203D80004EEA5 /* vnode_utils.m */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.objc; path = vnode_utils.m; sourceTree = "<group>"; };
 		917487872237236E008601C7 /* libpostexp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libpostexp.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9174878A2237236E008601C7 /* postexp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = postexp.h; sourceTree = "<group>"; };
 		9174878B2237236E008601C7 /* postexp.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = postexp.m; sourceTree = "<group>"; };
@@ -203,6 +207,8 @@
 				917487A522372535008601C7 /* offsetof.h */,
 				917487CE22385429008601C7 /* kernel_call.c */,
 				917487DC22385429008601C7 /* kernel_call.h */,
+				9162DBFB227203D80004EEA5 /* vnode_utils.h */,
+				9162DBFC227203D80004EEA5 /* vnode_utils.m */,
 				9162DBF72271EB740004EEA5 /* nvram_utils.h */,
 				9162DBF82271EB740004EEA5 /* nvram_utils.c */,
 				917487A622372535008601C7 /* launch_utils.c */,
@@ -373,6 +379,7 @@
 				784F42752270B053005C2E76 /* macho-helper.c in Sources */,
 				784F42762270B053005C2E76 /* offsetcache.c in Sources */,
 				784F42772270B053005C2E76 /* pac.c in Sources */,
+				9162DBFE227203D80004EEA5 /* vnode_utils.m in Sources */,
 				9162DBFA2271EB740004EEA5 /* nvram_utils.c in Sources */,
 				784F42782270B053005C2E76 /* kc_parameters.c in Sources */,
 				784F42792270B053005C2E76 /* root.c in Sources */,
@@ -406,6 +413,7 @@
 				917487B722372536008601C7 /* macho-helper.c in Sources */,
 				91748831224E0C44008601C7 /* offsetcache.c in Sources */,
 				917487E322385429008601C7 /* pac.c in Sources */,
+				9162DBFD227203D80004EEA5 /* vnode_utils.m in Sources */,
 				9162DBF92271EB740004EEA5 /* nvram_utils.c in Sources */,
 				917487E122385429008601C7 /* kc_parameters.c in Sources */,
 				917487BF22372536008601C7 /* root.c in Sources */,

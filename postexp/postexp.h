@@ -103,6 +103,22 @@ enum post_exp_t dump_apticker(void);
  */
 void cleanup(void);
 
+/*
+ * get_vnode_at_path
+ *
+ * Description:
+ *     Get vnode pointer at path.
+ */
+uint64_t get_vnode_at_path(const char *path);
+
+/*
+ * fix_mmap
+ *
+ * Description:
+ *     Fix mmap for dylibs.
+ */
+int fix_mmap(char *path);
+
 ///////////////////////////////////////////// ADVANCED EXPORT METHODS /////////////////////////////////////////////
 
 /*
@@ -324,5 +340,21 @@ int unload_launchdeamons(char *launchctl_path, char *launchdaemon_folder);
  *     Loads LaunchDaemons at path.
  */
 int load_launchdeamons(char *launchctl_path, char *launchdaemon_folder);
+
+/*
+ * pid_of_proc_name
+ *
+ * Description:
+ *     Returns the pid by proc name.
+ */
+unsigned int pid_of_proc_name(char *nm);
+
+/*
+ * get_symbol_by_name
+ *
+ * Description:
+ *     Returns address of a symbol inside offsetcache.
+ */
+uint64_t get_symbol_by_name(char *name);
 
 #endif /* postexp_h */

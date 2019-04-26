@@ -14,6 +14,14 @@
 
 #include <mach/mach.h>
 
+// used to fix what kexecute returns
+typedef struct {
+    uint64_t prev;
+    uint64_t next;
+    uint64_t start;
+    uint64_t end;
+} kmap_hdr_t;
+
 /*
  * task_self_addr
  *
@@ -133,5 +141,21 @@ uint64_t find_kernel_base(void);
  *     Gets address of port.
  */
 uint64_t get_address_of_port(pid_t pid, mach_port_t port);
+
+/*
+ * zm_fix_addr
+ *
+ * Description:
+ *     Fix zm addr.
+ */
+uint64_t zm_fix_addr(uint64_t addr);
+
+/*
+ * pid_of_proc_name_internal
+ *
+ * Description:
+ *     Returns the pid by proc name.
+ */
+unsigned int pid_of_proc_name_internal(char *nm);
 
 #endif /* kernel_utils_h */
