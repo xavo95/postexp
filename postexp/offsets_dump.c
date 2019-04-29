@@ -166,6 +166,7 @@ void set_cached_offsets(double kCFCoreFoundationVersionNumber) {
     SETOFFSET(sysent, slide_addr(find_sysent()));
     //    uint64_t find_syscall(int n);
     SETOFFSET(proc_find, slide_addr(find_proc_find()));
+    SETOFFSET(proc_rele, slide_addr(find_proc_rele()));
     //  EX: find_mpo(cred_label_update_execve)
     //    #define find_mpo(name) find_mpo_entry(offsetof(struct mac_policy_ops, mpo_ ##name))
     //    uint64_t find_mpo_entry(uint64_t offset);
@@ -177,6 +178,8 @@ void set_cached_offsets(double kCFCoreFoundationVersionNumber) {
     SETOFFSET(extension_add, slide_addr(find_extension_add()));
     SETOFFSET(extension_release, slide_addr(find_extension_release()));
     SETOFFSET(sfree, slide_addr(find_sfree()));
+    SETOFFSET(sb_ustate_create, find_sb_ustate_create());
+    SETOFFSET(sstrdup, find_sstrdup());
 
     if(monolithic_kernel) {
         SETOFFSET(monolithic_kernel, true);
